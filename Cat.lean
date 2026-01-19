@@ -10,13 +10,19 @@ infixl : 70 " >-> " => comp
 
 axiom assoc.{u} {w x y z : Sort u}
   {f : w :->: x} {g : x :->: y} {h : y :->: z} :
-    (f >-> g) >-> h = f >-> (g >-> h)
+    f >-> (g >-> h) = (f >-> g) >-> h
 
 axiom ident.{u} {x : Sort u} : x :->: x
 
 axiom comp_id_left.{u}  {x y : Sort u} {f : x :->: y} : ident >-> f = f
 
 axiom comp_id_right.{u} {x y : Sort u} {f : x :->: y} : f >-> ident = f
+
+-- Isomorphism of objects
+def isom.{u} {x y : Sort u} : Prop :=
+  ∃ (f : x :->: y), ∃ g, f >-> g = ident ∧ g >-> f = ident
+
+infix : 50 " ≅ " => @isom
 
 ---------------------------------------------------------------------------------------
 
@@ -66,16 +72,10 @@ axiom curry_axiom.{u} {x a b : Sort u} {f: x :><: a :->: b}
 ---------------------------------------------------------------------------------------
 
 theorem eq_id_left {x} {e : x :->: x} (h : ∀ y, ∀ (f : x :->: y), e >-> f = f)
-  : e = ident := by
-    have h2 := h x ident
-    rw [comp_id_right] at h2
-    exact h2
+  : e = ident := comp_id_right.symm.trans (h x ident)
 
 theorem eq_id_right {x} {e : x :->: x} (h : ∀ y, ∀ (f : y :->: x), f >-> e = f)
-  : e = ident := by
-    have h2 := h x ident
-    rw [comp_id_left] at h2
-    exact h2
+  : e = ident := comp_id_left.symm.trans (h x ident)
 
 ---------------------------------------------------------------------------------------
 
@@ -90,6 +90,9 @@ noncomputable def isom1to0.{u} {a b c : Sort u}
 theorem isom_indeed_1.{u} {a b c : Sort u}
   : (isom0to1 : (a :><: b) :^: c :->: _) >-> isom1to0 = ident := by
     unfold isom0to1 isom1to0
+    apply eq_id_right
+    intro y f
+    rw [assoc]
 
     sorry
 
@@ -98,3 +101,8 @@ theorem isom_indeed_2.{u} {a b c : Sort u}
     unfold isom0to1 isom1to0
 
     sorry
+
+-- Finally, the fruit of our hard works... (A × B) ^ C ≅ (A ^ C) × (B ^ C)
+theorem exp_isom {a b c : Sort u}
+  : (a :><: b) :^: c ≅ a :^: c :><: b :^: c :=
+    ⟨isom0to1, ⟨isom1to0, ⟨isom_indeed_1, isom_indeed_2⟩⟩⟩
