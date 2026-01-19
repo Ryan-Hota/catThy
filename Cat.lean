@@ -8,11 +8,15 @@ axiom comp.{u} {x y z : Sort u} : x :->: y -> y :->: z -> x :->: z
 
 infixl : 70 " >-> " => comp
 
+axiom assoc.{u} {w x y z : Sort u}
+  {f : w :->: x} {g : x :->: y} {h : y :->: z} :
+    (f >-> g) >-> h = f >-> (g >-> h)
+
 axiom ident.{u} {x : Sort u} : x :->: x
 
-axiom comp_id_left.{u}  {x y : Sort u} (f : x :->: y) : ident >-> f = f
+axiom comp_id_left.{u}  {x y : Sort u} {f : x :->: y} : ident >-> f = f
 
-axiom comp_id_right.{u} {x y : Sort u} (f : x :->: y) : f >-> ident = f
+axiom comp_id_right.{u} {x y : Sort u} {f : x :->: y} : f >-> ident = f
 
 ---------------------------------------------------------------------------------------
 
@@ -58,6 +62,22 @@ axiom evaluate.{u} {a b : Sort u} : (b :^: a :><: a) :->: b
 -- same way on the arguments.
 axiom curry_axiom.{u} {x a b : Sort u} {f: x :><: a :->: b}
   : (curry f >< ident) >-> evaluate = f
+
+---------------------------------------------------------------------------------------
+
+theorem eq_id_left {x} {e : x :->: x} (h : ∀ y, ∀ (f : x :->: y), e >-> f = f)
+  : e = ident := by
+    have h2 := h x ident
+    rw [comp_id_right] at h2
+    exact h2
+
+theorem eq_id_right {x} {e : x :->: x} (h : ∀ y, ∀ (f : y :->: x), f >-> e = f)
+  : e = ident := by
+    have h2 := h x ident
+    rw [comp_id_left] at h2
+    exact h2
+
+---------------------------------------------------------------------------------------
 
 noncomputable def isom0to1.{u} {a b c : Sort u}
   : (a :><: b) :^: c :->: (a :^: c :><: b :^: c) :=
