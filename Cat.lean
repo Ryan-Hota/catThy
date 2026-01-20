@@ -77,32 +77,43 @@ theorem eq_id_left {x} {e : x :->: x} (h : ∀ y, ∀ (f : x :->: y), e >-> f = 
 theorem eq_id_right {x} {e : x :->: x} (h : ∀ y, ∀ (f : y :->: x), f >-> e = f)
   : e = ident := comp_id_left.symm.trans (h x ident)
 
+theorem comp_distrib {x a b c} {f : x :->: c} {p : c :->: a} {q : c :->: b} :
+  f >-> (p <> q) = (f >-> p) <> (f >-> q) :=
+    sorry
+
+theorem curry_shift {x y c z} {f : x :->: y} {g : y :><: c :->: z}
+  : f >-> curry g = curry ((fst >-> f <> snd) >-> g) :=
+    sorry
+
 ---------------------------------------------------------------------------------------
 
-noncomputable def isom0to1.{u} {a b c : Sort u}
+noncomputable def isom_l.{u} {a b c : Sort u}
   : (a :><: b) :^: c :->: (a :^: c :><: b :^: c) :=
     curry (evaluate >-> fst) <> curry (evaluate >-> snd)
 
-noncomputable def isom1to0.{u} {a b c : Sort u}
+noncomputable def isom_r.{u} {a b c : Sort u}
   : (a :^: c :><: b :^: c) :->: (a :><: b) :^: c :=
     curry ((fst >< ident) >-> evaluate <> (snd >< ident) >-> evaluate)
 
 theorem isom_indeed_1.{u} {a b c : Sort u}
-  : (isom0to1 : (a :><: b) :^: c :->: _) >-> isom1to0 = ident := by
-    unfold isom0to1 isom1to0
+  : (isom_l : (a :><: b) :^: c :->: _) >-> isom_r = ident := by
     apply eq_id_right
-    intro y f
+    intro x f
     rw [assoc]
+    unfold isom_l
+    rw [comp_distrib]
+    unfold isom_r
+    repeat rw [curry_shift, comp_distrib]
+    --rw [curry_shift]
 
     sorry
 
 theorem isom_indeed_2.{u} {a b c : Sort u}
-  : isom1to0 >-> (isom0to1 : (a :><: b) :^: c :->: _) = ident := by
-    unfold isom0to1 isom1to0
+  : isom_r >-> (isom_l : (a :><: b) :^: c :->: _) = ident := by
 
     sorry
 
 -- Finally, the fruit of our hard works... (A × B) ^ C ≅ (A ^ C) × (B ^ C)
 theorem exp_isom {a b c : Sort u}
   : (a :><: b) :^: c ≅ a :^: c :><: b :^: c :=
-    ⟨isom0to1, ⟨isom1to0, ⟨isom_indeed_1, isom_indeed_2⟩⟩⟩
+    ⟨isom_l, ⟨isom_r, ⟨isom_indeed_1, isom_indeed_2⟩⟩⟩
