@@ -15,7 +15,7 @@ evaluate = undefined
 
 {-
 LAWS
-( curry f :><: id ) > evaluate = f
+( curry f >< id ) > evaluate = f
 -}
 
 law :: ((y1 :><: b) :->: z) -> (y1 :><: b) :->: z
