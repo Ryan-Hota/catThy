@@ -3,7 +3,7 @@ namespace Category
   structure Category.{u_1, u_2} (Obj : Type u_1) where
     mk ::
       hom : Obj -> Obj -> Type u_2
-      seq {x y z : Obj} (f : hom x y) (g : hom y z) : hom x z
+      seq {x y z : Obj} : hom x y -> hom y z -> hom x z
       id {x : Obj} : hom x x
       id_is_left_identity  {x y : Obj} {f : hom x y} : seq id f  = f
       id_is_right_identity {x y : Obj} {f : hom x y} : seq f  id = f
@@ -44,13 +44,20 @@ namespace Definitions
       object : obj
       fst : cat.hom object a
       snd : cat.hom object b
-      pairing {x : obj} : cat.hom x a -> cat.hom x b -> cat.hom x object
+      pair {x : obj} : cat.hom x a -> cat.hom x b -> cat.hom x object
       proof (x : obj) :
         ∀ (fa : cat.hom x a), ∀ fb,
-          pairing fa fb ▷ fst = fa ∧ pairing fa fb ▷ snd = fb
+          pair fa fb ▷ fst = fa ∧ pair fa fb ▷ snd = fb
         ∧
-        ∀ (g : cat.hom x object), pairing (g ▷ fst) (g ▷ snd) = g
+        ∀ (g : cat.hom x object), pair (g ▷ fst) (g ▷ snd) = g
 
+  def cross
+    {d1 d2 c1 c2 : obj}
+    {d1Xd2 : @Product _ cat d1 d2}
+    {c1Xc2 : @Product _ cat c1 c2}
+    (f : cat.hom d1 c1) (g : cat.hom d2 c2)
+    : cat.hom d1Xd2.object c1Xc2.object :=
+      c1Xc2.pair (d1Xd2.fst ▷ f) (d1Xd2.snd ▷ g)
 
   structure Coproduct (a b : obj) where
     mk ::
@@ -58,20 +65,28 @@ namespace Definitions
       inl : cat.hom a object
       inr : cat.hom b object
       either {x : obj} : cat.hom a x -> cat.hom b x -> cat.hom object x
-      proof (x : obj) :
-        ∀ (fa : cat.hom a x), ∀ fb,
-          inl ▷ either fa fb = fa ∧ inr ▷ either fa fb = fb
-        ∧
-        ∀ (g : cat.hom object x), either (inl ▷ g) (inr ▷ g) = g
+      proof (x : obj) : (
+        ∀ (fa : cat.hom a x),
+          ∀ fb,
+            inl ▷ either fa fb = fa ∧ inr ▷ either fa fb = fb
+      ) ∧ (
+        ∀ (g : cat.hom object x),
+          either (inl ▷ g) (inr ▷ g) = g
+      )
 
-  structure Exponential {a b : obj} where
+  structure Exponential (a b : obj) where
     mk ::
       object : obj
       all_products (x : obj) : @Product _ cat x a
-      curry {x : obj} : cat.hom (all_products x).object a -> cat.hom x object
+      curry {x : obj} : cat.hom (all_products x).object b -> cat.hom x object
       eval : cat.hom (all_products object).object b
-      proof : sorry
-
+      proof (x : obj) : (
+        ∀ (f : cat.hom (all_products x).object b) ,
+          (cross (curry f) cat.id) ▷ eval = f
+      ) ∧ (
+        ∀ (g : cat.hom x object) ,
+          curry (cross g cat.id ▷ eval) = g
+      )
 
 end Definitions
 
