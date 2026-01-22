@@ -96,14 +96,14 @@ namespace Category
     : e = ℂ.id :=
       (ℂ.id_left _).symm.trans (h X ℂ.id)
 
-  def inits_iso (i1 i2 : @Initial ℂ)
-    : Isomorphic i1.obj i2.obj :=
-      have f (i1 i2 : Initial) := i1.unique_to i2.obj
-      have proof (i1 i2 : Initial) :=
-        let fwd := f i1 i2 ; let bck := f i2 i1
-        (i1.proof_unique i1.obj (fwd ▷ bck)).trans
-        (i1.proof_unique i1.obj ℂ.id).symm
-      Isomorphic.mk (f i1 _) (f i2 _) ⟨proof i1 _, proof i2 _⟩
+  def inits_iso (I I' : @Initial ℂ)
+    : Isomorphic I.obj I'.obj :=
+      have f (I I' : Initial) := I.unique_to I'.obj
+      have proof (I I' : Initial) :=
+        let fwd := f I I' ; let bck := f I' I
+        (I.proof_unique I.obj (fwd ▷ bck)).trans
+        (I.proof_unique I.obj ℂ.id).symm
+      Isomorphic.mk (f I _) (f I' _) ⟨proof I _, proof I' _⟩
 
   def products_iso {A B : Obj} (P P' : @Product ℂ A B)
     : Isomorphic P.obj P'.obj :=
