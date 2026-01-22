@@ -1,4 +1,4 @@
-namespace Category
+namespace Definitions
 
   structure Category.{u, v} (Obj : Type u) where
     mk ::
@@ -11,23 +11,18 @@ namespace Category
   infixr : 60 " ⟶ " => Category.hom _
   infixl : 70 " ▷ " => Category.seq _
 
-  -- Isomorphism of objects
-  def isom {obj} {cat : Category obj} {x y : obj} : Prop :=
-    ∃ (f : x ⟶ y), ∃ g, f ▷ g = cat.id ∧ g ▷ f = cat.id
-
-  infix : 50 " ≅ " => @isom
-
-end Category
-
------------------------------------------------------------------------
-
-namespace Definitions
-
-  open Category
+  -----------------------------------------------------------------------
 
   variable {obj} {cat : Category obj}
 
-  structure Init where
+  -- Isomorphism of objects
+  structure Isomorphic {x y : obj} where
+    mk::
+      fwd : cat.hom x y
+      bck : cat.hom y x
+      proof : fwd ▷ bck = cat.id ∧ bck ▷ fwd = cat.id
+
+  structure Initial where
     mk ::
       object : obj
       get_morphism (x : obj) : cat.hom object x
@@ -45,11 +40,11 @@ namespace Definitions
       fst : cat.hom object a
       snd : cat.hom object b
       pair {x : obj} : cat.hom x a -> cat.hom x b -> cat.hom x object
-      proof (x : obj) :
+      proof_exists (x : obj) :
         ∀ (fa : cat.hom x a), ∀ fb,
           pair fa fb ▷ fst = fa ∧ pair fa fb ▷ snd = fb
-        ∧
-        ∀ (g : cat.hom x object), pair (g ▷ fst) (g ▷ snd) = g
+      proof_unique (x : obj) : ∀ (g : cat.hom x object),
+          pair (g ▷ fst) (g ▷ snd) = g
 
   def cross
     {d1 d2 c1 c2 : obj}
@@ -94,7 +89,7 @@ end Definitions
 
 namespace Theorems
 
-  open Category
+  open Definitions
 
   variable {obj} {cat : Category obj}
 
