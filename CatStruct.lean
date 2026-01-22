@@ -1,8 +1,8 @@
 namespace Category
 
-  structure Category.{u_1, u_2} (Obj : Type u_1) where
+  structure Category.{u, v} (Obj : Type u) where
     mk ::
-      hom : Obj -> Obj -> Type u_2
+      hom : Obj -> Obj -> Type v
       seq {x y z : Obj} : hom x y -> hom y z -> hom x z
       id {x : Obj} : hom x x
       id_is_left_identity  {x y : Obj} {f : hom x y} : seq id f  = f
