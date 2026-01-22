@@ -25,17 +25,23 @@ namespace Category
       bck : B ⟶ A
       proof : fwd ▷ bck = ℂ.id ∧ bck ▷ fwd = ℂ.id
 
+  infixr : 70 " ≅ " => Isomorphic
+
   structure Initial where
     mk ::
       obj : Obj
       unique_to (X : Obj) : obj ⟶ X
       proof_unique (X : Obj) : ∀ f : ℂ.Hom obj X, f = unique_to X
 
+  infixr : 100 " ⊥ " => Initial
+
   structure Terminal where
     mk ::
       obj : Obj
       unique_from (X : Obj) : X ⟶ obj
       proof_unique (X : Obj) : ∀ f : ℂ.Hom X obj, f = unique_from X
+
+  infixr : 100 " ⊤ " => Terminal
 
   structure Product (A B : Obj) where
     mk ::
@@ -49,13 +55,17 @@ namespace Category
       proof_unique (X : Obj) : ∀ g : X ⟶ obj,
           pair (g ▷ fst) (g ▷ snd) = g
 
-  def cross
+  infixr : 80 " × " => Product
+
+  def times
     {D D' C C' : Obj}
-    {Prod_of_Ds : Product D D'}
-    {Prod_of_Cs : Product C C'}
+    {Prod_of_Ds : D × D'}
+    {Prod_of_Cs : C × C'}
     (f : D ⟶ C) (f' : D' ⟶ C')
     : ℂ.Hom Prod_of_Ds.obj Prod_of_Cs.obj :=
       Prod_of_Cs.pair (Prod_of_Ds.fst ▷ f) (Prod_of_Ds.snd ▷ f')
+
+  infixl : 80 " × " => times
 
   structure Coproduct (A B : Obj) where
     mk ::
@@ -71,18 +81,22 @@ namespace Category
         ∀ g : ℂ.Hom obj X,
           either (inl ▷ g) (inr ▷ g) = g
 
+  infixr : 75 " + " => Coproduct
+
   structure Exponential (A B : Obj) where
     mk ::
       obj : Obj
-      all_products (X : Obj) : Product X A
+      all_products (X : Obj) : X × A
       curry {X : Obj} : (all_products X).obj ⟶ B -> X ⟶ obj
       eval : (all_products obj).obj ⟶ B
       proof_exists (X : Obj) :
         ∀ f : (all_products X).obj ⟶ B ,
-          (cross (curry f) ℂ.id) ▷ eval = f
+          (curry f × ℂ.id) ▷ eval = f
       proof_unique (X : Obj) :
         ∀ g : X ⟶ obj ,
-          curry (cross g ℂ.id ▷ eval) = g
+          curry ((g × ℂ.id) ▷ eval) = g
+
+  infixl : 80 " ⟹ " => Exponential
 
 -----------------------------------------------------------------------
 
@@ -96,8 +110,7 @@ namespace Category
     : e = ℂ.id :=
       (ℂ.id_left _).symm.trans (h X ℂ.id)
 
-  def inits_iso (I I' : @Initial ℂ)
-    : Isomorphic I.obj I'.obj :=
+  def inits_iso (I I' : @Initial ℂ) : I.obj ≅ I'.obj :=
       have f (I I' : Initial) := I.unique_to I'.obj
       have proof (I I' : Initial) :=
         let fwd := f I I' ; let bck := f I' I
@@ -105,10 +118,9 @@ namespace Category
         (I.proof_unique I.obj ℂ.id).symm
       Isomorphic.mk (f I _) (f I' _) ⟨proof I _, proof I' _⟩
 
-  def products_iso {A B : Obj} (P P' : @Product ℂ A B)
-    : Isomorphic P.obj P'.obj :=
-      let f (P P' : Product A B) := P'.pair P.fst P.snd
-      have proof (P P' : Product A B) : (f P P' ▷ f P' P) = ℂ.id := by
+  def products_iso {A B : Obj} (P P' : @Product ℂ A B) : P.obj ≅ P'.obj :=
+      let f (P P' : A × B) := P'.pair P.fst P.snd
+      have proof (P P' : A × B) : (f P P' ▷ f P' P) = ℂ.id := by
         let fwd := f P P' ; let bck := f P' P
         rw [← P.proof_unique _ (fwd ▷ bck)]
         repeat rw [ℂ.assoc]
