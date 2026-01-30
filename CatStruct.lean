@@ -282,11 +282,10 @@ namespace CategoryOfCategories
   open CategoryTheory
 
   structure Func (𝓐 : Category) (𝓑 : Category) where
-    mk ::
-      _Obj : 𝓐.Obj -> 𝓑.Obj
-      _Mor {X Y : 𝓐.Obj} : X ⟶ Y -> _Obj X ⟶ _Obj Y
-      proof {X Y Z : 𝓐.Obj}
-        : ∀ (f : X ⟶ Y) (g : Y ⟶ Z), _Mor (f ▷ g) = _Mor f ▷ _Mor g
+    _Obj : 𝓐.Obj -> 𝓑.Obj
+    _Mor {X Y : 𝓐.Obj} : X ⟶ Y -> _Obj X ⟶ _Obj Y
+    proof {X Y Z : 𝓐.Obj}
+      : ∀ (f : X ⟶ Y) (g : Y ⟶ Z), _Mor (f ▷ g) = _Mor f ▷ _Mor g
 
   def Cat : Category :=
 
