@@ -3,15 +3,14 @@
 namespace CategoryTheory
 
   structure Category.{u, v} where
-    mk ::
-      Obj : Sort u
-      Hom : Obj -> Obj -> Sort v
-      seq {X Y Z : Obj} : Hom X Y -> Hom Y Z -> Hom X Z
-      assoc {W X Y Z : Obj} {f : Hom W X} {g : Hom X Y} {h: Hom Y Z}
-        : seq (seq f g) h = seq f (seq g h)
-      id {X : Obj} : Hom X X
-      id_left  {X Y : Obj} (f : Hom X Y) : f = seq id f
-      id_right {X Y : Obj} (f : Hom X Y) : f = seq f  id
+    Obj : Sort u
+    Hom : Obj -> Obj -> Sort v
+    seq {X Y Z : Obj} : Hom X Y -> Hom Y Z -> Hom X Z
+    assoc {W X Y Z : Obj} {f : Hom W X} {g : Hom X Y} {h: Hom Y Z}
+      : seq (seq f g) h = seq f (seq g h)
+    id {X : Obj} : Hom X X
+    id_left  {X Y : Obj} (f : Hom X Y) : f = seq id f
+    id_right {X Y : Obj} (f : Hom X Y) : f = seq f  id
 
   notation "Obj" => Category.Obj _
   infixr : 60 " ⟶ " => Category.Hom _
@@ -27,41 +26,37 @@ namespace CategoryTheory
   variable {𝓒 : Category}
 
   structure Isomorphic (A B : 𝓒.Obj) where
-    mk::
-      fwd : A ⟶ B
-      bck : B ⟶ A
-      proof : fwd ▷ bck = 𝟙 ∧ bck ▷ fwd = 𝟙
+    fwd : A ⟶ B
+    bck : B ⟶ A
+    proof : fwd ▷ bck = 𝟙 ∧ bck ▷ fwd = 𝟙
 
   infixr : 70 " ≅ " => Isomorphic
 
   structure Initial where
-    mk ::
-      obj : 𝓒.Obj
-      unique_to (X : Obj) : obj ⟶ X
-      proof_unique {X : Obj} : ∀ f : obj ⟶ X, f = unique_to X
+    obj : 𝓒.Obj
+    unique_to (X : Obj) : obj ⟶ X
+    proof_unique {X : Obj} : ∀ f : obj ⟶ X, f = unique_to X
 
   notation "⊥" => Initial
   notation "∃!(⊥⟶)" => Initial.proof_unique _
 
   structure Terminal where
-    mk ::
-      obj : 𝓒.Obj
-      unique_from (X : Obj) : X ⟶ obj
-      proof_unique {X : Obj} : ∀ f : X ⟶ obj, f = unique_from X
+    obj : 𝓒.Obj
+    unique_from (X : Obj) : X ⟶ obj
+    proof_unique {X : Obj} : ∀ f : X ⟶ obj, f = unique_from X
 
   infixr : 100 " ⊤ " => Terminal
 
   structure Product (A B : 𝓒.Obj) where
-    mk ::
-      obj : Obj
-      fst : obj ⟶ A
-      snd : obj ⟶ B
-      pair {X : Obj} : X ⟶ A -> X ⟶ B -> X ⟶ obj
-      proof_exists {X : Obj} :
-        ∀ fa : X ⟶ A, ∀ fb,
-          pair fa fb ▷ fst = fa ∧ pair fa fb ▷ snd = fb
-      proof_unique {X : Obj} : ∀ g : X ⟶ obj,
-          g = pair (g ▷ fst) (g ▷ snd)
+    obj : Obj
+    fst : obj ⟶ A
+    snd : obj ⟶ B
+    pair {X : Obj} : X ⟶ A -> X ⟶ B -> X ⟶ obj
+    proof_exists {X : Obj} :
+      ∀ fa : X ⟶ A, ∀ fb,
+        pair fa fb ▷ fst = fa ∧ pair fa fb ▷ snd = fb
+    proof_unique {X : Obj} : ∀ g : X ⟶ obj,
+        g = pair (g ▷ fst) (g ▷ snd)
 
   infixr : 80 " × " => Product
   notation "fst" => Product.fst _
@@ -81,18 +76,17 @@ namespace CategoryTheory
   infixl : 80 " × " => times
 
   structure Coproduct (A B : 𝓒.Obj) where
-    mk ::
-      obj : Obj
-      inl : A ⟶ obj
-      inr : B ⟶ obj
-      either {X : Obj} : A ⟶ X -> B ⟶ X -> obj ⟶ X
-      proof_exists {X : Obj} :
-        ∀ fa : A ⟶ X,
-          ∀ fb : B ⟶ X,
-            inl ▷ either fa fb = fa ∧ inr ▷ either fa fb = fb
-      proof_unique {X : Obj} :
-        ∀ g : obj ⟶ X,
-          g = either (inl ▷ g) (inr ▷ g)
+    obj : Obj
+    inl : A ⟶ obj
+    inr : B ⟶ obj
+    either {X : Obj} : A ⟶ X -> B ⟶ X -> obj ⟶ X
+    proof_exists {X : Obj} :
+      ∀ fa : A ⟶ X,
+        ∀ fb : B ⟶ X,
+          inl ▷ either fa fb = fa ∧ inr ▷ either fa fb = fb
+    proof_unique {X : Obj} :
+      ∀ g : obj ⟶ X,
+        g = either (inl ▷ g) (inr ▷ g)
 
   infixr : 75 " + " => Coproduct
   notation "inl" => Coproduct.inl _
@@ -100,17 +94,16 @@ namespace CategoryTheory
   notation "["f","g"]"  => Coproduct.either _ f g
 
   structure Exponential (A B : 𝓒.Obj) where
-    mk ::
-      obj : Obj
-      any_product (X : Obj) : X × A
-      curry {X : Obj} : (any_product X).obj ⟶ B -> X ⟶ obj
-      eval : (any_product obj).obj ⟶ B
-      proof_exists {X : Obj} :
-        ∀ f : (any_product X).obj ⟶ B ,
-          (curry f × 𝟙) ▷ eval = f
-      proof_unique {X : Obj} :
-        ∀ g : X ⟶ obj ,
-          g = curry ((g × 𝟙) ▷ eval)
+    obj : Obj
+    any_product (X : Obj) : X × A
+    curry {X : Obj} : (any_product X).obj ⟶ B -> X ⟶ obj
+    eval : (any_product obj).obj ⟶ B
+    proof_exists {X : Obj} :
+      ∀ f : (any_product X).obj ⟶ B ,
+        (curry f × 𝟙) ▷ eval = f
+    proof_unique {X : Obj} :
+      ∀ g : X ⟶ obj ,
+        g = curry ((g × 𝟙) ▷ eval)
 
   infixl : 80 " ⟹ " => Exponential
   notation "_×" => Exponential.any_product _
@@ -135,7 +128,7 @@ namespace CategoryTheory
       let fwd := f I I' ; let bck := f I' I
       rw[∃!(⊥⟶) (fwd ▷ bck)]
       rw[∃!(⊥⟶) 𝟙]
-    Isomorphic.mk (f I I') (f I' I) ⟨proof I I', proof I' I⟩
+    .mk (f I I') (f I' I) ⟨proof I I', proof I' I⟩
 
   def products_iso {A B : 𝓒.Obj} (P P' : A × B) : P.obj ≅ P'.obj :=
     let f (P P' : A × B) : P.obj ⟶ P'.obj := ⟨fst,snd⟩
@@ -147,7 +140,7 @@ namespace CategoryTheory
       dsimp [fwd]; rw[(∃(⟶×) fst snd).left, (∃(⟶×) fst snd).right]
       rw [𝟙▷ fst, 𝟙▷ snd]
       exact (∃!(⟶×) 𝟙).symm
-    Isomorphic.mk (f P P') (f P' P) ⟨proof P P', proof P' P⟩
+    .mk (f P P') (f P' P) ⟨proof P P', proof P' P⟩
 
   theorem pair_seq {A B C1 C2 : 𝓒.Obj} {P : C1 × C2}
   : ∀ f (g : B ⟶ _) h, f▷⟨g,h⟩ = (⟨f▷g,f▷h⟩ : A ⟶ P.obj) := by
@@ -174,18 +167,18 @@ namespace CategoryTheory
       rw[← times_seq _ _ _ _]
       rw[𝓒.assoc]
       dsimp[f]
-      rw[Exponential.proof_exists _ _]
+      rw[∃(⟶⟹) _]
       rw[← 𝓒.assoc]
       rw[times_seq _ _ _ _]
       rw[← ▷𝟙]
       rw[𝟙▷ (curry ( ( 𝟙 × 𝟙 ) ▷ ε ))]
       rw[← times_seq _ _ _ _]
       rw[𝓒.assoc]
-      rw[E'.proof_exists _]
+      rw[∃(⟶⟹) _]
       rw[← 𝓒.assoc]
       rw[times_seq _ _ _ _]
       repeat rw[← ▷𝟙]
-      rw[← E.proof_unique 𝟙]
+      rw[← ∃!(⟶⟹) 𝟙]
     .mk (f E E') (f E' E) ⟨proof E E', proof E' E⟩
 
   def exp_dist_prod {A B C : 𝓒.Obj}
@@ -206,7 +199,7 @@ namespace CategoryTheory
       rw[𝟙▷ (curry ((𝟙×𝟙)▷f▷snd))]
       repeat rw[← times_seq _ _ _ _]
       repeat rw[𝓒.assoc]
-      repeat rw[Exponential.proof_exists _ _]
+      repeat rw[∃(⟶⟹) _]
       repeat rw[← 𝓒.assoc]
       repeat rw[times_seq _ _ _ _]
       repeat rw[← 𝟙▷ 𝟙]
@@ -224,7 +217,7 @@ namespace CategoryTheory
       repeat rw[← 𝓒.assoc]
       repeat rw[times_seq _ _ _ _]
       repeat rw[← 𝟙▷]
-      repeat rw[← Exponential.proof_unique _ _]
+      repeat rw[← ∃!(⟶⟹) _]
       rw[← ∃!(⟶×)]
     exps_iso AxBeC (.mk AeCxBeC.obj AxBeC.any_product curry' eval' proof_exists' proof_unique')
 
@@ -278,7 +271,7 @@ namespace DivCategory
     have id {x : Object} : hom x x := ⟨1, Nat.mul_one x⟩
     have id_left  {x y : Object} (f : hom x y) : seq id f  = f := rfl
     have id_right {x y : Object} (f : hom x y) : seq f  id = f := rfl
-    Category.mk Object hom seq @assoc id id_left id_right
+    .mk Object hom seq @assoc id id_left id_right
 
 end DivCategory
 
@@ -298,17 +291,17 @@ namespace CategoryOfCategories
   def Cat : Category :=
 
     let seq {𝓧 𝓨 𝓩 : Category} : Func 𝓧 𝓨 -> Func 𝓨 𝓩 -> Func 𝓧 𝓩 := fun F G =>
-      let map_obj : 𝓧.Obj -> 𝓩.Obj := G._Obj ∘ F._Obj
-      let F_mor {A B : 𝓧.Obj}
-        : A ⟶ B -> map_obj A ⟶ map_obj B := G._Mor ∘ F._Mor
+      let FG_Obj : 𝓧.Obj -> 𝓩.Obj := G._Obj ∘ F._Obj
+      let FG_Mor {A B : 𝓧.Obj}
+        : A ⟶ B -> FG_Obj A ⟶ FG_Obj B := G._Mor ∘ F._Mor
       have proof {P Q R : 𝓧.Obj}
-        : ∀ (f : P ⟶ Q) (g : Q ⟶ R), F_mor (f ▷ g) = F_mor f ▷ F_mor g := by
+        : ∀ (f : P ⟶ Q) (g : Q ⟶ R), FG_Mor (f ▷ g) = FG_Mor f ▷ FG_Mor g := by
           intro f g
-          dsimp [F_mor]
+          dsimp [FG_Mor]
           have h2 := G.proof (F._Mor f) (F._Mor g)
           rw [← (F.proof f g)] at h2
           exact h2
-      .mk map_obj F_mor proof
+      .mk FG_Obj FG_Mor proof
     have assoc := by simp ; exact ⟨rfl, rfl⟩
 
     let id {𝓧 : Category} : Func 𝓧 𝓧 := .mk id id (fun _ _ => rfl)
