@@ -1,6 +1,6 @@
 -- TODO set operator precedences
 
-namespace Category
+namespace CategoryTheory
 
   structure Category.{u, v} where
     mk ::
@@ -116,8 +116,9 @@ namespace Category
 
 -----------------------------------------------------------------------
 
-  theorem eq_id_left (h : ∀ Y, ∀ f : X ⟶ Y, e ▷ f = f) : e = ℂ.id :=
-    (▷𝟙 _).symm.trans (h X 𝟙)
+  theorem eq_id_left  {X : ℂ.Obj} {e : X ⟶ X}
+    (h : ∀ Y, ∀ f : X ⟶ Y, e ▷ f = f) : e = 𝟙 :=
+      (▷𝟙 _).symm.trans (h X 𝟙)
 
   theorem eq_id_right {X : ℂ.Obj} {e : X ⟶ X}
     (h : ∀ Y, ∀ f : Y ⟶ X, f ▷ e = f) : e = 𝟙 :=
@@ -143,4 +144,94 @@ namespace Category
       exact ∃!(⟶×) 𝟙
     Isomorphic.mk (f P P') (f P' P) ⟨proof P P', proof P' P⟩
 
-end Category
+end CategoryTheory
+
+-------------------------------------------------------------------------------------------
+
+--# We shall now try implementing some categories.
+
+--# Category Template
+
+-- namespace CategoryName
+
+--   open CategoryTheory
+
+--   def ℂ : Category :=
+--     let Object : Sort _ := sorry
+--     let hom : Object -> Object -> Sort _ := sorry
+--     let seq {x y z : Object} : hom x y -> hom y z -> hom x z := sorry
+--     have assoc {w x y z : Object} {f : hom w x} {g : hom x y} {h: hom y z}
+--       : seq (seq f g) h = seq f (seq g h) := sorry
+--     let id {x : Object} : hom x x := sorry
+--     have id_left  {x y : Object} (f : hom x y) : seq id f  = f := sorry
+--     have id_right {x y : Object} (f : hom x y) : seq f  id = f := sorry
+--     Category.mk Object hom seq @assoc id id_left id_right
+
+-- end categoryName
+
+-------------------------------------------------------------------------------------------
+
+namespace DivCategory
+
+  open CategoryTheory
+
+  def Divides (a b : Nat) := ∃ c, a * c = b
+
+  def C : Category :=
+    let Object : Sort _ := Nat
+    let hom : Object -> Object -> Sort _ := Divides
+    have seq {x y z : Object} : hom x y -> hom y z -> hom x z := by
+      intro h1 h2
+      dsimp [hom, Divides] at *
+      cases h1; rename_i c1 h3
+      cases h2; rename_i c2 h4
+      rw [← h3] at h4
+      exists c1 * c2
+      rw [← h4]
+      rw [Nat.mul_assoc]
+    have assoc {w x y z : Object} {f : hom w x} {g : hom x y} {h: hom y z}
+      : seq (seq f g) h = seq f (seq g h) := rfl
+    have id {x : Object} : hom x x := ⟨1, Nat.mul_one x⟩
+    have id_left  {x y : Object} (f : hom x y) : seq id f  = f := rfl
+    have id_right {x y : Object} (f : hom x y) : seq f  id = f := rfl
+    Category.mk Object hom seq @assoc id id_left id_right
+
+
+end DivCategory
+
+-------------------------------------------------------------------------------------------
+
+namespace CategoryOfCategories
+
+  open CategoryTheory
+
+  structure Functor.{u} (A B : Category.{u}) where
+    mk ::
+      map_obj : A.Obj -> B.Obj
+      map_mor {x y : A.Obj} : x ⟶ y -> map_obj x ⟶ map_obj y
+      proof {x y z : A.Obj}
+        : ∀ (f : x ⟶ y) (g : y ⟶ z), map_mor (f ▷ g) = map_mor f ▷ map_mor g
+
+
+  def ℂ : Category :=
+    let Object : Sort _ := Category.{0}
+    let hom : Object -> Object -> Sort _ := Functor
+    let seq {x y z : Object} : hom x y -> hom y z -> hom x z := fun f1 f2 =>
+      have map_obj := f2.map_obj ∘ f1.map_obj
+      let map_mor {p q : x.Obj} := f2.map_mor ∘ (@f1.map_mor p q)
+      have proof {p q r : x.Obj}
+        : ∀ (f : p ⟶ q) (g : q ⟶ r), map_mor (f ▷ g) = map_mor f ▷ map_mor g := by
+          intro f g
+          dsimp [map_mor]
+          have h2 := f2.proof (f1.map_mor f) (f1.map_mor g)
+          rw [← (f1.proof f g)] at h2
+          exact h2
+      Functor.mk map_obj map_mor proof
+    have assoc {w x y z : Object} {f : hom w x} {g : hom x y} {h: hom y z}
+      : seq (seq f g) h = seq f (seq g h) := by simp [seq, hom]; rfl
+    let id {x : Object} : hom x x := Functor.mk id id (fun f g => rfl)
+    have id_left  {x y : Object} (f : hom x y) : seq id f = f := by simp [id, seq, hom]
+    have id_right {x y : Object} (f : hom x y) : seq f  id = f := by simp [id, seq, hom]
+    Category.mk Object hom seq @assoc id id_left id_right
+
+end CategoryOfCategories
