@@ -93,6 +93,17 @@ namespace CategoryTheory
   notation "inr" => Coproduct.inr _
   notation "["f","g"]"  => Coproduct.either _ f g
 
+   structure Func (𝓐 𝓑 : Category) where
+    _Obj : 𝓐.Obj → 𝓑.Obj
+    _Mor {X Y : 𝓐.Obj} : X ⟶ Y → _Obj X ⟶ _Obj Y
+    proof {X Y Z : 𝓐.Obj} :
+      ∀ (f : X ⟶ Y) (g : Y ⟶ Z), _Mor (f ▷ g) = _Mor f ▷ _Mor g
+
+  structure NatTransform {𝓐 𝓑 : Category} (F G : Func 𝓐 𝓑) where
+    component : (a : 𝓐.Obj) → F._Obj a ⟶ G._Obj a
+    proof {X Y : 𝓐.Obj} :
+      ∀ f : X ⟶ Y, F._Mor f ▷ component Y = component X ▷ G._Mor f
+
   structure Exponential (A B : 𝓒.Obj) where
     obj : Obj
     any_product (X : Obj) : X × A
@@ -112,11 +123,11 @@ namespace CategoryTheory
   notation "∃!(⟶⟹)" => Exponential.proof_unique _
   notation "ε" => Exponential.eval _
 
-  structure Func (𝓐 : Category) (𝓑 : Category) where
-    _Obj : 𝓐.Obj → 𝓑.Obj
-    _Mor {X Y : 𝓐.Obj} : X ⟶ Y → _Obj X ⟶ _Obj Y
-    proof {X Y Z : 𝓐.Obj}
-      : ∀ (f : X ⟶ Y) (g : Y ⟶ Z), _Mor (f ▷ g) = _Mor f ▷ _Mor g
+  structure CartesianClosedCategory (Cat : Category) where
+    mk ::
+      terminal : @Terminal Cat
+      prod (A B : Cat.Obj) : Product A B
+      exp  (A B : Cat.Obj) : Exponential A B
 
 -----------------------------------------------------------------------
 
@@ -306,39 +317,33 @@ namespace CategoryOfCategories
     have id_right := by simp
     .mk Category Func seq assoc id id_left id_right
 
-  structure CartesianClosedCategory (Cat : Category) where
-    mk ::
-      terminal : @Terminal Cat
-      prod (A B : Cat.Obj) : Product A B
-      exp  (A B : Cat.Obj) : Exponential A B
-
   def Cat_is_CC : CartesianClosedCategory Cat :=
-    have terminal :=
-      let obj : Category :=
-        .mk
+    let terminal :=
+      .mk
+        (.mk
           Unit
           (fun _ _ => Unit)
-          (fun _ _  => ())
+          (fun _ _ => ())
           (by simp only [implies_true])
           ()
           (by simp only [implies_true])
           (by simp only [implies_true])
-      let unique_from (X : Category) : Func X obj :=
-        .mk
+        )
+        (fun _ => .mk
           (fun _ => ())
           (fun _ => ())
           (by grind only)
-      let proof_unique {X : Category} : ∀ f : Func X obj, f = unique_from X := by grind only
-      .mk obj unique_from proof_unique
-    have prod := fun 𝓐 𝓑 => .mk
+        )
+        (by intro _ _; congr)
+    let prod := fun 𝓐 𝓑 => .mk
       (.mk
         (𝓐.Obj × 𝓑.Obj)
         (fun (w,x) (y,z) => (w ⟶ y) × (x ⟶ z))
         (fun a b => (a.fst ▷ b.fst, a.snd ▷ b.snd))
-        (by simp [𝓐.assoc, 𝓑.assoc])
+        (by simp only [𝓐.assoc, 𝓑.assoc, implies_true])
         (𝟙, 𝟙)
-        (by simp; exact fun _ _ _ _ _ _ => And.intro (𝟙▷ _) (𝟙▷ _))
-        (by simp; exact fun _ _ _ _ _ _ => And.intro (▷𝟙 _) (▷𝟙 _))
+        (by simp only [← 𝟙▷, implies_true])
+        (by simp only [← ▷𝟙, implies_true])
       )
       (.mk
         (by simp only; exact fun a => a.fst)
@@ -356,12 +361,51 @@ namespace CategoryOfCategories
         (by simp only [f.proof, g.proof, implies_true])
       )
       (by
-        intro _ _ _;
-        refine And.intro ?_ ?_;
+        intro _ _ _
+        refine And.intro ?_ ?_
         all_goals congr
       )
       (by intro _ _; congr)
-    have exp := sorry
+    let exp := fun 𝓐 𝓑 => .mk
+      (.mk
+        (Func 𝓐 𝓑)
+        (fun F G => NatTransform F G)
+        (fun τ₁ τ₂ => .mk
+          (fun a => τ₁.component a ▷ τ₂.component a)
+          (by
+            simp only [𝓑.assoc, ← τ₂.proof]
+            simp only [← 𝓑.assoc, τ₁.proof, implies_true]
+          )
+        )
+        (by simp only [𝓑.assoc, implies_true])
+        (.mk (fun x => 𝟙) (by grind only [𝟙▷, ▷𝟙]))
+        (by simp only [← 𝟙▷, implies_true])
+        (by simp only [← ▷𝟙, implies_true])
+      )
+      (fun 𝓧 => prod 𝓧 𝓐)
+      (fun F => .mk
+        (fun x => .mk
+          (fun a => F._Obj (x, a))
+          (fun f => F._Mor (𝟙, f))
+          (by simp only [id_eq, ← F.proof, ← 𝟙▷, implies_true, prod])
+        )
+        (fun f => .mk
+          (fun _ => F._Mor (f, 𝟙))
+          (by simp only [id_eq, ← F.proof, ← 𝟙▷, ← ▷𝟙, implies_true, prod])
+        )
+        (by simp only [id_eq, ← F.proof, ← 𝟙▷, implies_true, prod])
+      )
+      (.mk
+        (by simp only [prod]; exact fun (F, a) => F._Obj a)
+        (by simp only [id_eq, prod]; intro (F,_) (_,b) (τ, f); exact F._Mor f ▷ τ.component b)
+        (by
+          simp only [id_eq, NatTransform.proof, Func.proof, Category.assoc, Prod.forall, prod]
+          intros
+          simp only [← Category.assoc, NatTransform.proof]
+        )
+      )
+      sorry
+      sorry
     .mk terminal prod exp
 
 end CategoryOfCategories
