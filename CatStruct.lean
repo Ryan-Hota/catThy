@@ -4,8 +4,8 @@ namespace CategoryTheory
 
   structure Category.{u, v} where
     Obj : Sort u
-    Hom : Obj -> Obj -> Sort v
-    seq {X Y Z : Obj} : Hom X Y -> Hom Y Z -> Hom X Z
+    Hom : Obj → Obj → Sort v
+    seq {X Y Z : Obj} : Hom X Y → Hom Y Z → Hom X Z
     assoc {W X Y Z : Obj} {f : Hom W X} {g : Hom X Y} {h: Hom Y Z}
       : seq (seq f g) h = seq f (seq g h)
     id {X : Obj} : Hom X X
@@ -51,7 +51,7 @@ namespace CategoryTheory
     obj : Obj
     fst : obj ⟶ A
     snd : obj ⟶ B
-    pair {X : Obj} : X ⟶ A -> X ⟶ B -> X ⟶ obj
+    pair {X : Obj} : X ⟶ A → X ⟶ B → X ⟶ obj
     proof_exists {X : Obj} :
       ∀ fa : X ⟶ A, ∀ fb,
         pair fa fb ▷ fst = fa ∧ pair fa fb ▷ snd = fb
@@ -79,7 +79,7 @@ namespace CategoryTheory
     obj : Obj
     inl : A ⟶ obj
     inr : B ⟶ obj
-    either {X : Obj} : A ⟶ X -> B ⟶ X -> obj ⟶ X
+    either {X : Obj} : A ⟶ X → B ⟶ X → obj ⟶ X
     proof_exists {X : Obj} :
       ∀ fa : A ⟶ X,
         ∀ fb : B ⟶ X,
@@ -96,7 +96,7 @@ namespace CategoryTheory
   structure Exponential (A B : 𝓒.Obj) where
     obj : Obj
     any_product (X : Obj) : X × A
-    curry {X : Obj} : (any_product X).obj ⟶ B -> X ⟶ obj
+    curry {X : Obj} : (any_product X).obj ⟶ B → X ⟶ obj
     eval : (any_product obj).obj ⟶ B
     proof_exists {X : Obj} :
       ∀ f : (any_product X).obj ⟶ B ,
@@ -111,6 +111,12 @@ namespace CategoryTheory
   notation "∃(⟶⟹)" => Exponential.proof_exists _
   notation "∃!(⟶⟹)" => Exponential.proof_unique _
   notation "ε" => Exponential.eval _
+
+  structure Func (𝓐 : Category) (𝓑 : Category) where
+    _Obj : 𝓐.Obj → 𝓑.Obj
+    _Mor {X Y : 𝓐.Obj} : X ⟶ Y → _Obj X ⟶ _Obj Y
+    proof {X Y Z : 𝓐.Obj}
+      : ∀ (f : X ⟶ Y) (g : Y ⟶ Z), _Mor (f ▷ g) = _Mor f ▷ _Mor g
 
 -----------------------------------------------------------------------
 
@@ -151,7 +157,7 @@ namespace CategoryTheory
 
   theorem times_seq {X0 X1 X2 Y0 Y1 Y2 : 𝓒.Obj}
     {P0 : X0 × Y0} {P1 : X1 × Y1} {P2 : X2 × Y2}
-    : ∀ (a : X0 ⟶ X1) (b : Y0 ⟶ Y1) (c : X1 ⟶ X2) (d : Y1 ⟶ Y2),
+    : ∀ {a : X0 ⟶ X1} {b : Y0 ⟶ Y1} {c : X1 ⟶ X2} {d : Y1 ⟶ Y2},
     ((a×b : _ ⟶ P1.obj)▷(c×d)) = ((a▷c)×(b▷d) : P0.obj ⟶ P2.obj) := by
     intro a b c d
     dsimp[times]
@@ -164,19 +170,19 @@ namespace CategoryTheory
     have proof (E E' : B ⟹ A) : f E E' ▷ f E' E = 𝟙 := by
       rw[∃!(⟶⟹) (f E E' ▷ f E' E)]
       rw[𝟙▷ 𝟙]
-      rw[← times_seq _ _ _ _]
+      rw[← times_seq]
       rw[𝓒.assoc]
       dsimp[f]
       rw[∃(⟶⟹) _]
       rw[← 𝓒.assoc]
-      rw[times_seq _ _ _ _]
+      rw[times_seq]
       rw[← ▷𝟙]
       rw[𝟙▷ (curry ( ( 𝟙 × 𝟙 ) ▷ ε ))]
-      rw[← times_seq _ _ _ _]
+      rw[← times_seq]
       rw[𝓒.assoc]
       rw[∃(⟶⟹) _]
       rw[← 𝓒.assoc]
-      rw[times_seq _ _ _ _]
+      rw[times_seq]
       repeat rw[← ▷𝟙]
       rw[← ∃!(⟶⟹) 𝟙]
     .mk (f E E') (f E' E) ⟨proof E E', proof E' E⟩
@@ -185,7 +191,7 @@ namespace CategoryTheory
   (AxB : A × B) (AxBeC : C ⟹ AxB.obj)
   (AeC : C ⟹ A) (BeC : C ⟹ B) (AeCxBeC : AeC.obj × BeC.obj)
   : AxBeC.obj ≅ AeCxBeC.obj :=
-    let curry' {X : Obj} : _ -> X ⟶ _ := fun f =>
+    let curry' {X : Obj} : _ → X ⟶ _ := fun f =>
       ⟨curry ((𝟙×𝟙)▷f▷fst), curry ((𝟙×𝟙)▷f▷snd)⟩
     let eval' := ⟨(fst × 𝟙)▷ε, (snd × 𝟙)▷ε⟩
     have proof_exists' := by
@@ -193,15 +199,15 @@ namespace CategoryTheory
       dsimp[curry', eval']
       rw[pair_seq]
       repeat rw[← 𝓒.assoc]
-      repeat rw[times_seq _ _ _ _]
+      repeat rw[times_seq]
       repeat rw[(∃(⟶×) _ _).left, (∃(⟶×) _ _).right]
       rw[𝟙▷ (curry ((𝟙×𝟙)▷f▷fst))]
       rw[𝟙▷ (curry ((𝟙×𝟙)▷f▷snd))]
-      repeat rw[← times_seq _ _ _ _]
+      repeat rw[← times_seq]
       repeat rw[𝓒.assoc]
       repeat rw[∃(⟶⟹) _]
       repeat rw[← 𝓒.assoc]
-      repeat rw[times_seq _ _ _ _]
+      repeat rw[times_seq]
       repeat rw[← 𝟙▷ 𝟙]
       repeat rw[← ∃!(⟶×) _]
       dsimp[times]
@@ -215,7 +221,7 @@ namespace CategoryTheory
       repeat rw[𝓒.assoc]
       rw[(∃(⟶×) _ _).left, (∃(⟶×) _ _).right]
       repeat rw[← 𝓒.assoc]
-      repeat rw[times_seq _ _ _ _]
+      repeat rw[times_seq]
       repeat rw[← 𝟙▷]
       repeat rw[← ∃!(⟶⟹) _]
       rw[← ∃!(⟶×)]
@@ -235,8 +241,8 @@ end CategoryTheory
 
 --   def ℂ : Category :=
 --     let Object : Sort _ := sorry
---     let hom : Object -> Object -> Sort _ := sorry
---     let seq {x y z : Object} : hom x y -> hom y z -> hom x z := sorry
+--     let hom : Object → Object → Sort _ := sorry
+--     let seq {x y z : Object} : hom x y → hom y z → hom x z := sorry
 --     have assoc {w x y z : Object} {f : hom w x} {g : hom x y} {h: hom y z}
 --       : seq (seq f g) h = seq f (seq g h) := sorry
 --     let id {x : Object} : hom x x := sorry
@@ -256,8 +262,8 @@ namespace DivCategory
 
   def DividesPoset : Category :=
     let Object : Sort _ := Nat
-    let hom : Object -> Object -> Sort _ := Divides
-    have seq {x y z : Object} : hom x y -> hom y z -> hom x z := by
+    let hom : Object → Object → Sort _ := Divides
+    have seq {x y z : Object} : hom x y → hom y z → hom x z := by
       intro h1 h2
       dsimp [hom, Divides] at *
       cases h1; rename_i c1 h3
@@ -281,18 +287,11 @@ namespace CategoryOfCategories
 
   open CategoryTheory
 
-  structure Func (𝓐 : Category) (𝓑 : Category) where
-    _Obj : 𝓐.Obj -> 𝓑.Obj
-    _Mor {X Y : 𝓐.Obj} : X ⟶ Y -> _Obj X ⟶ _Obj Y
-    proof {X Y Z : 𝓐.Obj}
-      : ∀ (f : X ⟶ Y) (g : Y ⟶ Z), _Mor (f ▷ g) = _Mor f ▷ _Mor g
-
   def Cat : Category :=
-
-    let seq {𝓧 𝓨 𝓩 : Category} : Func 𝓧 𝓨 -> Func 𝓨 𝓩 -> Func 𝓧 𝓩 := fun F G =>
-      let FG_Obj : 𝓧.Obj -> 𝓩.Obj := G._Obj ∘ F._Obj
+    let seq {𝓧 𝓨 𝓩 : Category} : Func 𝓧 𝓨 → Func 𝓨 𝓩 → Func 𝓧 𝓩 := fun F G =>
+      let FG_Obj : 𝓧.Obj → 𝓩.Obj := G._Obj ∘ F._Obj
       let FG_Mor {A B : 𝓧.Obj}
-        : A ⟶ B -> FG_Obj A ⟶ FG_Obj B := G._Mor ∘ F._Mor
+        : A ⟶ B → FG_Obj A ⟶ FG_Obj B := G._Mor ∘ F._Mor
       have proof {P Q R : 𝓧.Obj}
         : ∀ (f : P ⟶ Q) (g : Q ⟶ R), FG_Mor (f ▷ g) = FG_Mor f ▷ FG_Mor g := by
           intro f g
@@ -302,11 +301,67 @@ namespace CategoryOfCategories
           exact h2
       .mk FG_Obj FG_Mor proof
     have assoc := by simp ; exact ⟨rfl, rfl⟩
-
     let id {𝓧 : Category} : Func 𝓧 𝓧 := .mk id id (fun _ _ => rfl)
     have id_left  := by simp
     have id_right := by simp
-
     .mk Category Func seq assoc id id_left id_right
+
+  structure CartesianClosedCategory (Cat : Category) where
+    mk ::
+      terminal : @Terminal Cat
+      prod (A B : Cat.Obj) : Product A B
+      exp  (A B : Cat.Obj) : Exponential A B
+
+  def Cat_is_CC : CartesianClosedCategory Cat :=
+    have terminal :=
+      let obj : Category :=
+        .mk
+          Unit
+          (fun _ _ => Unit)
+          (fun _ _  => ())
+          (by simp only [implies_true])
+          ()
+          (by simp only [implies_true])
+          (by simp only [implies_true])
+      let unique_from (X : Category) : Func X obj :=
+        .mk
+          (fun _ => ())
+          (fun _ => ())
+          (by grind only)
+      let proof_unique {X : Category} : ∀ f : Func X obj, f = unique_from X := by grind only
+      .mk obj unique_from proof_unique
+    have prod := fun 𝓐 𝓑 => .mk
+      (.mk
+        (𝓐.Obj × 𝓑.Obj)
+        (fun (w,x) (y,z) => (w ⟶ y) × (x ⟶ z))
+        (fun a b => (a.fst ▷ b.fst, a.snd ▷ b.snd))
+        (by simp [𝓐.assoc, 𝓑.assoc])
+        (𝟙, 𝟙)
+        (by simp; exact fun _ _ _ _ _ _ => And.intro (𝟙▷ _) (𝟙▷ _))
+        (by simp; exact fun _ _ _ _ _ _ => And.intro (▷𝟙 _) (▷𝟙 _))
+      )
+      (.mk
+        (by simp only; exact fun a => a.fst)
+        (by simp only [id_eq]; exact fun a => a.fst)
+        (by simp only [id_eq, implies_true])
+      )
+      (.mk
+        (by simp only; exact fun a => a.snd)
+        (by simp only [id_eq]; exact fun a => a.snd)
+        (by simp only [id_eq, implies_true])
+      )
+      (fun f g => .mk
+        (fun x => (f._Obj x, g._Obj x))
+        (fun x => (f._Mor x, g._Mor x))
+        (by simp only [f.proof, g.proof, implies_true])
+      )
+      (by
+        intro _ _ _;
+        refine And.intro ?_ ?_;
+        all_goals congr
+      )
+      (by intro _ _; congr)
+    have exp := sorry
+    .mk terminal prod exp
 
 end CategoryOfCategories
