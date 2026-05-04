@@ -274,7 +274,7 @@ namespace CategoryOfCategories
   -/
   def Cat.{u} : Category.{u + 1, u} :=
     have assoc := by simp [seq]; exact ⟨rfl, rfl⟩
-    let id {𝓧 : Category} : Func 𝓧 𝓧 := .mk id id sorry (fun _ _ => rfl)
+    let id {𝓧 : Category} : Func 𝓧 𝓧 := .mk id id (by simp) (fun _ _ => rfl)
     have id_left  := by simp [seq]
     have id_right := by simp [seq]
     .mk Category.{u, u} Func seq assoc id id_left id_right
@@ -353,28 +353,33 @@ namespace CategoryOfCategories
   }
 
   def Cat.exp.curry.{u} {𝓐 𝓑 : Cat.{u}.Obj} {𝓧 : Cat.Obj} :
-    Cat.Hom (prod 𝓧 𝓐).obj 𝓑 → Cat.Hom 𝓧 (obj 𝓐 𝓑) := fun F => {
-      Obj := fun x => {
-        Obj := fun a => F.Obj (x, a)
-        Mor := fun f => F.Mor (𝟙, f)
+    Cat.Hom (prod 𝓧 𝓐).obj 𝓑 → Cat.Hom 𝓧 (obj 𝓐 𝓑) := fun F =>
+      let h := @F.proof_id
+      {
+        Obj := fun x => {
+          Obj := fun a => F.Obj (x, a)
+          Mor := fun f => F.Mor (𝟙, f)
+          proof_id := by
+            simp [prod] at h
+            simp [h]
+          proof_comp := by simp only [prod, ← F.proof_comp, ← 𝟙▷, implies_true]
+        }
+        Mor := fun f => {
+          component := fun _ => F.Mor (f, 𝟙)
+          proof := by simp only [prod, ← F.proof_comp, ← 𝟙▷, ← ▷𝟙, implies_true]
+        }
         proof_id := by
-
-          sorry
-        proof_comp := by simp only [prod, ← F.proof_comp, ← 𝟙▷, implies_true]
+          simp [prod] at h
+          simp [h, obj]
+        proof_comp := by simp only [prod, ← F.proof_comp, ← 𝟙▷, implies_true, obj]
       }
-      Mor := fun f => {
-        component := fun _ => F.Mor (f, 𝟙)
-        proof := by simp only [prod, ← F.proof_comp, ← 𝟙▷, ← ▷𝟙, implies_true]
-      }
-      proof_id := by sorry
-      proof_comp := by simp only [prod, ← F.proof_comp, ← 𝟙▷, implies_true, obj]
-    }
 
   def Cat.exp.eval.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
     Cat.Hom (prod (obj 𝓐 𝓑) 𝓐).obj 𝓑 := {
       Obj := fun p => p.fst.Obj p.snd
       Mor := @fun p q r => p.fst.Mor r.snd ▷ r.fst.component q.snd
-      proof_id := by sorry
+      proof_id := by
+        simp [prod, Func.proof_id, ← 𝟙▷, obj]
       proof_comp := by
         simp only [prod, Prod.forall, obj]
         intros; expose_names
@@ -394,8 +399,6 @@ namespace CategoryOfCategories
       . ext
         simp [← F.proof_comp, prod, ← 𝟙▷, ← ▷𝟙]
 
-  -- set_option pp.universes true
-
   def Cat.exp.proof_unique.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
     ∀ {𝓧 : Cat.Obj} (G : Cat.Hom 𝓧 (obj 𝓐 𝓑)), G = curry (seq (G × Cat.id) eval) := by
       intro 𝓧 G
@@ -406,9 +409,6 @@ namespace CategoryOfCategories
         simp [G.proof_id, obj, ← 𝟙▷]
         rfl
       . simp [Func.proof_id, ← 𝟙▷]
-        have h := @G.proof_id
-        simp [obj] at h
-
         sorry
 
   /--
