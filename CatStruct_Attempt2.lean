@@ -1,9 +1,8 @@
 -- TODO set operator precedences
 
-set_option profiler true
-
 namespace CategoryTheory
 
+  @[ext]
   structure Category.{u_1, u_2} : Type (max u_1 u_2 + 1) where
     Obj : Type u_1
     Hom : Obj → Obj → Type u_2
@@ -25,6 +24,7 @@ namespace CategoryTheory
 
   -----------------------------------------------------------------------
 
+  @[ext]
   structure Isomorphic.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} (A B : 𝓒.Obj) where
     fwd : A ⟶ B
     bck : B ⟶ A
@@ -32,6 +32,7 @@ namespace CategoryTheory
 
   infixr : 70 " ≅ " => Isomorphic
 
+  @[ext]
   structure Initial.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} : Type (max u_1 u_2) where
     obj : 𝓒.Obj
     unique_to (X : _Obj) : obj ⟶ X
@@ -40,6 +41,7 @@ namespace CategoryTheory
   notation "⊥" => Initial
   notation "∃!(⊥⟶)" => Initial.proof_unique _
 
+  @[ext]
   structure Terminal.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} : Type (max u_1 u_2) where
     obj : 𝓒.Obj
     unique_from (X : _Obj) : X ⟶ obj
@@ -47,6 +49,7 @@ namespace CategoryTheory
 
   infixr : 100 " ⊤ " => Terminal
 
+  @[ext]
   structure Product.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} (A B : 𝓒.Obj) : Type (max u_1 u_2) where
     obj : _Obj
     fst : obj ⟶ A
@@ -75,6 +78,7 @@ namespace CategoryTheory
 
   infixl : 80 " × " => times
 
+  @[ext]
   structure Coproduct.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} (A B : 𝓒.Obj) : Type (max u_1 u_2) where
     obj : _Obj
     inl : A ⟶ obj
@@ -93,6 +97,7 @@ namespace CategoryTheory
   notation "_inr" => Coproduct.inr _
   notation "["f","g"]"  => Coproduct.either _ f g
 
+  @[ext]
   structure Exponential.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} (A B : 𝓒.Obj) : Type (max u_1 u_2) where
     obj : _Obj
     any_product : (X : _Obj) → X × A
@@ -112,17 +117,21 @@ namespace CategoryTheory
   notation "∃!(⟶⟹)" => Exponential.proof_unique _
   notation "ε" => Exponential.eval _
 
+  @[ext]
   structure Func.{u_1, u_2} (𝓐 𝓑 : Category.{u_1, u_2}) : Type (max u_1 u_2) where
     Obj : 𝓐.Obj → 𝓑.Obj
     Mor {X Y : 𝓐.Obj} : X ⟶ Y → Obj X ⟶ Obj Y
-    proof {X Y Z : 𝓐.Obj} :
+    proof_id {X : 𝓐.Obj} : Mor (@𝓐.id X) = 𝟙
+    proof_comp {X Y Z : 𝓐.Obj} :
       ∀ (f : X ⟶ Y) (g : Y ⟶ Z), Mor (f ▷ g) = Mor f ▷ Mor g
 
+  @[ext]
   structure NatTransform.{u_1, u_2} {𝓐 𝓑 : Category.{u_1, u_2}} (F G : Func 𝓐 𝓑) : Type (max u_1 u_2) where
     component : (a : 𝓐.Obj) → F.Obj a ⟶ G.Obj a
     proof {X Y : 𝓐.Obj} :
       ∀ f : X ⟶ Y, F.Mor f ▷ component Y = component X ▷ G.Mor f
 
+  @[ext]
   structure CartesianClosedCategory.{u_1, u_2} (𝓒 : Category.{u_1, u_2}) : Type (max u_1 u_2) where
     terminal : @Terminal 𝓒
     prod (A B : 𝓒.Obj) : Product A B
@@ -247,26 +256,27 @@ namespace CategoryOfCategories
 
   -- TODO : Switch direction of things like Functor.proof, 𝟙▷, ▷𝟙
 
+  def seq.{u} {𝓧 𝓨 𝓩 : Category.{u, u}} : Func 𝓧 𝓨 → Func 𝓨 𝓩 → Func 𝓧 𝓩 := fun F G =>
+    {
+      Obj := G.Obj ∘ F.Obj
+      Mor := G.Mor ∘ F.Mor
+      proof_id := by
+        simp [F.proof_id, G.proof_id]
+      proof_comp := by
+        intro _ _ _ f g
+        have h2 := G.proof_comp (F.Mor f) (F.Mor g)
+        rw [← (F.proof_comp f g)] at h2
+        exact h2
+    }
+
   /--
     `Cat.{u}` is the category of all `Category.{u, u}` categories.
   -/
   def Cat.{u} : Category.{u + 1, u} :=
-    let seq {𝓧 𝓨 𝓩 : Category} : Func 𝓧 𝓨 → Func 𝓨 𝓩 → Func 𝓧 𝓩 := fun F G =>
-      let FG_Obj : 𝓧.Obj → 𝓩.Obj := G.Obj ∘ F.Obj
-      let FG_Mor {A B : 𝓧.Obj}
-        : A ⟶ B → FG_Obj A ⟶ FG_Obj B := G.Mor ∘ F.Mor
-      have proof {P Q R : 𝓧.Obj}
-        : ∀ (f : P ⟶ Q) (g : Q ⟶ R), FG_Mor (f ▷ g) = FG_Mor f ▷ FG_Mor g := by
-          intro f g
-          dsimp [FG_Mor]
-          have h2 := G.proof (F.Mor f) (F.Mor g)
-          rw [← (F.proof f g)] at h2
-          exact h2
-      .mk FG_Obj FG_Mor proof
-    have assoc := by simp; exact ⟨rfl, rfl⟩
-    let id {𝓧 : Category} : Func 𝓧 𝓧 := .mk id id (fun _ _ => rfl)
-    have id_left  := by simp
-    have id_right := by simp
+    have assoc := by simp [seq]; exact ⟨rfl, rfl⟩
+    let id {𝓧 : Category} : Func 𝓧 𝓧 := .mk id id sorry (fun _ _ => rfl)
+    have id_left  := by simp [seq]
+    have id_right := by simp [seq]
     .mk Category.{u, u} Func seq assoc id id_left id_right
 
   def Cat.terminal.{u} : Terminal (𝓒 := Cat.{u}) := {
@@ -276,13 +286,14 @@ namespace CategoryOfCategories
       seq := fun _ _ => PUnit.unit
       assoc := fun {W X Y Z} {f g h} => PUnit.eq_punit PUnit.unit
       id := PUnit.unit
-      id_left := fun {X Y} f => PUnit.eq_punit f
-      id_right := fun {X Y} f => PUnit.eq_punit f
+      id_left := by simp only [implies_true]
+      id_right := by simp only [implies_true]
     }
     unique_from := fun _ => {
       Obj := fun _ => PUnit.unit
       Mor := fun _ => PUnit.unit
-      proof := fun {X Y Z} f g => PUnit.eq_punit PUnit.unit
+      proof_id := by simp only [implies_true]
+      proof_comp := by simp only [implies_true]
     }
     proof_unique := by intros; rfl
   }
@@ -301,17 +312,20 @@ namespace CategoryOfCategories
     fst := {
       Obj := Prod.fst
       Mor := Prod.fst
-      proof := by simp
+      proof_id := by simp
+      proof_comp := by simp
     }
     snd := {
       Obj := Prod.snd
       Mor := Prod.snd
-      proof := by simp
+      proof_id := by simp
+      proof_comp := by simp
     }
     pair := fun f g => {
       Obj := fun x => (f.Obj x, g.Obj x)
       Mor := fun x => (f.Mor x, g.Mor x)
-      proof := by simp [f.proof, g.proof]
+      proof_id := by simp [f.proof_id, g.proof_id]
+      proof_comp := by simp [f.proof_comp, g.proof_comp]
     }
     proof_exists := by
       intros
@@ -340,37 +354,62 @@ namespace CategoryOfCategories
 
   def Cat.exp.curry.{u} {𝓐 𝓑 : Cat.{u}.Obj} {𝓧 : Cat.Obj} :
     Cat.Hom (prod 𝓧 𝓐).obj 𝓑 → Cat.Hom 𝓧 (obj 𝓐 𝓑) := fun F => {
-        Obj := fun x => {
-          Obj := fun a => F.Obj (x, a)
-          Mor := fun f => F.Mor (𝟙, f)
-          proof := by simp only [prod, ← F.proof, ← 𝟙▷, implies_true]
-        }
-        Mor := fun f => {
-          component := fun _ => F.Mor (f, 𝟙)
-          proof := by simp only [prod, ← F.proof, ← 𝟙▷, ← ▷𝟙, implies_true]
-        }
-        proof := by simp only [prod, ← F.proof, ← 𝟙▷, implies_true, obj]
+      Obj := fun x => {
+        Obj := fun a => F.Obj (x, a)
+        Mor := fun f => F.Mor (𝟙, f)
+        proof_id := by
+
+          sorry
+        proof_comp := by simp only [prod, ← F.proof_comp, ← 𝟙▷, implies_true]
       }
+      Mor := fun f => {
+        component := fun _ => F.Mor (f, 𝟙)
+        proof := by simp only [prod, ← F.proof_comp, ← 𝟙▷, ← ▷𝟙, implies_true]
+      }
+      proof_id := by sorry
+      proof_comp := by simp only [prod, ← F.proof_comp, ← 𝟙▷, implies_true, obj]
+    }
 
   def Cat.exp.eval.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
     Cat.Hom (prod (obj 𝓐 𝓑) 𝓐).obj 𝓑 := {
-        Obj := fun p => p.fst.Obj p.snd
-        Mor := @fun p q r => p.fst.Mor r.snd ▷ r.fst.component q.snd
-        proof := by
-          simp only [prod, Prod.forall, obj]
-          intros; expose_names
-          rw [a.proof]
-          have h1 := a_3.proof b_4
-          rw [𝓑.assoc]
-          conv in 𝓑.seq (a.Mor b_4) _ => rw [←𝓑.assoc, h1]
-          repeat rw [𝓑.assoc]
-      }
+      Obj := fun p => p.fst.Obj p.snd
+      Mor := @fun p q r => p.fst.Mor r.snd ▷ r.fst.component q.snd
+      proof_id := by sorry
+      proof_comp := by
+        simp only [prod, Prod.forall, obj]
+        intros; expose_names
+        rw [a.proof_comp]
+        have h1 := a_3.proof b_4
+        rw [𝓑.assoc]
+        conv in 𝓑.seq (a.Mor b_4) _ => rw [←𝓑.assoc, h1]
+        repeat rw [𝓑.assoc]
+    }
 
   def Cat.exp.proof_exists.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
-    ∀ {𝓧 : Cat.Obj} (f : Cat.Hom (prod 𝓧 𝓐).obj 𝓑), Cat.seq (curry f × Cat.id) eval = f := sorry
+    ∀ {𝓧 : Cat.Obj} (F : Cat.Hom (prod 𝓧 𝓐).obj 𝓑), seq (curry F × Cat.id) eval = F := by
+      intro 𝓧 F
+      ext
+      all_goals simp [seq, eval, curry, prod, times, Cat]
+      . congr 1
+      . ext
+        simp [← F.proof_comp, prod, ← 𝟙▷, ← ▷𝟙]
+
+  -- set_option pp.universes true
 
   def Cat.exp.proof_unique.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
-    ∀ {𝓧 : Cat.Obj} (g : Cat.Hom 𝓧 (obj 𝓐 𝓑)), g = curry (Cat.seq (g × Cat.id) eval) := sorry
+    ∀ {𝓧 : Cat.Obj} (G : Cat.Hom 𝓧 (obj 𝓐 𝓑)), G = curry (seq (G × Cat.id) eval) := by
+      intro 𝓧 G
+      simp [seq, eval, curry, prod, times, Cat]
+      ext
+      . expose_names
+        simp [fun {X Y} (f : 𝓐.Hom X Y) => (G.Mor (X := x) 𝓧.id).proof f]
+        simp [G.proof_id, obj, ← 𝟙▷]
+        rfl
+      . simp [Func.proof_id, ← 𝟙▷]
+        have h := @G.proof_id
+        simp [obj] at h
+
+        sorry
 
   /--
   For any `u`, the category of all `Category.{u, u}` categories is cartesian closed.
