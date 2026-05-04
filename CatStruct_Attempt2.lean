@@ -1,5 +1,7 @@
 -- TODO set operator precedences
 
+set_option profiler true
+
 namespace CategoryTheory
 
   structure Category.{u_1, u_2} : Type (max u_1 u_2 + 1) where
@@ -245,9 +247,10 @@ namespace CategoryOfCategories
 
   -- TODO : Switch direction of things like Functor.proof, 𝟙▷, ▷𝟙
 
-  set_option pp.universes true
-
-  def Cat.{u_1, u_2} : Category.{max u_1 u_2 + 1, max u_1 u_2} :=
+  /--
+    `Cat.{u}` is the category of all `Category.{u, u}` categories.
+  -/
+  def Cat.{u} : Category.{u + 1, u} :=
     let seq {𝓧 𝓨 𝓩 : Category} : Func 𝓧 𝓨 → Func 𝓨 𝓩 → Func 𝓧 𝓩 := fun F G =>
       let FG_Obj : 𝓧.Obj → 𝓩.Obj := G.Obj ∘ F.Obj
       let FG_Mor {A B : 𝓧.Obj}
@@ -260,105 +263,130 @@ namespace CategoryOfCategories
           rw [← (F.proof f g)] at h2
           exact h2
       .mk FG_Obj FG_Mor proof
-    have assoc := by simp ; exact ⟨rfl, rfl⟩
+    have assoc := by simp; exact ⟨rfl, rfl⟩
     let id {𝓧 : Category} : Func 𝓧 𝓧 := .mk id id (fun _ _ => rfl)
     have id_left  := by simp
     have id_right := by simp
-    .mk Category.{u_1, u_2} Func seq assoc id id_left id_right
+    .mk Category.{u, u} Func seq assoc id id_left id_right
 
-  def Cat.terminal : Terminal (𝓒 := Cat) :=
-    {
-      obj := {
-        Obj := PUnit
-        Hom := fun _ _ => PUnit
-        seq := fun _ _ => PUnit.unit
-        assoc := by simp
-        id := PUnit.unit
-        id_left := by simp
-        id_right := by simp
-      }
-      unique_from := fun _ => {
-        Obj := fun _ => PUnit.unit
-        Mor := fun _ => PUnit.unit
-        proof := by grind
-      }
-      proof_unique := by intro _ _; congr
+  def Cat.terminal.{u} : Terminal (𝓒 := Cat.{u}) := {
+    obj := {
+      Obj := PUnit
+      Hom := fun _ _ => PUnit
+      seq := fun _ _ => PUnit.unit
+      assoc := fun {W X Y Z} {f g h} => PUnit.eq_punit PUnit.unit
+      id := PUnit.unit
+      id_left := fun {X Y} f => PUnit.eq_punit f
+      id_right := fun {X Y} f => PUnit.eq_punit f
     }
+    unique_from := fun _ => {
+      Obj := fun _ => PUnit.unit
+      Mor := fun _ => PUnit.unit
+      proof := fun {X Y Z} f g => PUnit.eq_punit PUnit.unit
+    }
+    proof_unique := by intros; rfl
+  }
 
-  def Cat.prod.{u_1, u_2} (𝓐 𝓑 : Cat.{u_1, u_2}.Obj) : 𝓐 × 𝓑 :=
-    {
-      obj := {
-        Obj := 𝓐.Obj × 𝓑.Obj
-        Hom := fun (w,x) (y,z) => (w ⟶ y) × (x ⟶ z)
-        seq := fun a b => (a.fst ▷ b.fst, a.snd ▷ b.snd)
-        assoc := by
-          simp
-          intros; expose_names
-          have h1 := 𝓐.assoc (f := a_4) (g := a_5) (h := a_6)
-          have h2 := 𝓑.assoc (f := b_4) (g := b_5) (h := b_6)
-          simp [h1, h2]
-        id := (𝟙, 𝟙)
-        id_left := by simp [← 𝟙▷]
-        id_right := by simp [← ▷𝟙]
+  def Cat.prod.{u} (𝓐 𝓑 : Cat.{u}.Obj) : 𝓐 × 𝓑 := {
+    obj := {
+      Obj := 𝓐.Obj × 𝓑.Obj
+      Hom := fun (w,x) (y,z) => (w ⟶ y) × (x ⟶ z)
+      seq := fun a b => (a.fst ▷ b.fst, a.snd ▷ b.snd)
+      assoc := by
+        simp [𝓐.assoc, 𝓑.assoc]
+      id := (𝟙, 𝟙)
+      id_left := by simp [← 𝟙▷]
+      id_right := by simp [← ▷𝟙]
+    }
+    fst := {
+      Obj := Prod.fst
+      Mor := Prod.fst
+      proof := by simp
+    }
+    snd := {
+      Obj := Prod.snd
+      Mor := Prod.snd
+      proof := by simp
+    }
+    pair := fun f g => {
+      Obj := fun x => (f.Obj x, g.Obj x)
+      Mor := fun x => (f.Mor x, g.Mor x)
+      proof := by simp [f.proof, g.proof]
+    }
+    proof_exists := by
+      intros
+      refine And.intro ?_ ?_
+      all_goals rfl
+    proof_unique := by intros; rfl
+  }
+
+  def Cat.exp.obj.{u} (𝓐 𝓑 : Cat.{u}.Obj) : Cat.Obj := {
+    Obj := Func 𝓐 𝓑
+    Hom := fun F G => NatTransform F G
+    seq := fun τ₁ τ₂ => {
+      component := fun a => τ₁.component a ▷ τ₂.component a
+      proof := by
+        simp only [𝓑.assoc, ← τ₂.proof]
+        simp only [← 𝓑.assoc, τ₁.proof, implies_true]
+    }
+    assoc := by simp only [𝓑.assoc, implies_true]
+    id := {
+      component := fun x => 𝟙
+      proof := by grind only [𝟙▷, ▷𝟙]
+    }
+    id_left := by simp only [← 𝟙▷, implies_true]
+    id_right := by simp only [← ▷𝟙, implies_true]
+  }
+
+  def Cat.exp.curry.{u} {𝓐 𝓑 : Cat.{u}.Obj} {𝓧 : Cat.Obj} :
+    Cat.Hom (prod 𝓧 𝓐).obj 𝓑 → Cat.Hom 𝓧 (obj 𝓐 𝓑) := fun F => {
+        Obj := fun x => {
+          Obj := fun a => F.Obj (x, a)
+          Mor := fun f => F.Mor (𝟙, f)
+          proof := by simp only [prod, ← F.proof, ← 𝟙▷, implies_true]
+        }
+        Mor := fun f => {
+          component := fun _ => F.Mor (f, 𝟙)
+          proof := by simp only [prod, ← F.proof, ← 𝟙▷, ← ▷𝟙, implies_true]
+        }
+        proof := by simp only [prod, ← F.proof, ← 𝟙▷, implies_true, obj]
       }
-      fst := {
-        Obj := by simp; exact fun a => a.fst
-        Mor := by simp; exact fun a => a.fst
-        proof := by simp
-      }
-      snd := {
-        Obj := by simp; exact fun a => a.snd
-        Mor := by simp; exact fun a => a.snd
-        proof := by simp
-      }
-      pair := fun f g => {
-        Obj := fun x => (f.Obj x, g.Obj x)
-        Mor := fun x => (f.Mor x, g.Mor x)
+
+  def Cat.exp.eval.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
+    Cat.Hom (prod (obj 𝓐 𝓑) 𝓐).obj 𝓑 := {
+        Obj := fun p => p.fst.Obj p.snd
+        Mor := @fun p q r => p.fst.Mor r.snd ▷ r.fst.component q.snd
         proof := by
-          simp
+          simp only [prod, Prod.forall, obj]
           intros; expose_names
-          have h1 := f.proof f_1 g_1
-          have h2 := g.proof f_1 g_1
-          simp [h1, h2]
+          rw [a.proof]
+          have h1 := a_3.proof b_4
+          rw [𝓑.assoc]
+          conv in 𝓑.seq (a.Mor b_4) _ => rw [←𝓑.assoc, h1]
+          repeat rw [𝓑.assoc]
       }
-      proof_exists := by
-        intro _ _ _
-        refine And.intro ?_ ?_
-        all_goals congr
-      proof_unique := by intro _ _; congr
-    }
 
-  -- Functor categories will lie on the same level as the categories themselves if u_1 = u_2 in Category.{u_1, u_2}
-  def Cat.exp.{u} (𝓐 𝓑 : Cat.{u, u}.Obj) : @Exponential.{u + 1, u} Cat.{u, u} 𝓐 𝓑 :=
-    {
-      obj := {
-        Obj := Func 𝓐 𝓑
-        Hom := fun F G => NatTransform F G
-        seq := fun τ₁ τ₂ => {
-          component := fun a => τ₁.component a ▷ τ₂.component a
-          proof := by
-            sorry
-        }
-        assoc := by sorry
-        id := {
-          component := fun x => 𝟙
-          proof := by grind [𝟙▷, ▷𝟙]
-        }
-        id_left := by simp [← 𝟙▷]
-        id_right := by simp [← ▷𝟙]
-      }
-      any_product := fun 𝓧 => prod 𝓧 𝓐
-      curry := sorry
-      eval := sorry
-      proof_exists := sorry
-      proof_unique := sorry
-    }
+  def Cat.exp.proof_exists.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
+    ∀ {𝓧 : Cat.Obj} (f : Cat.Hom (prod 𝓧 𝓐).obj 𝓑), Cat.seq (curry f × Cat.id) eval = f := sorry
 
-  def Cat_is_CC.{u} : CartesianClosedCategory Cat.{u, u} :=
+  def Cat.exp.proof_unique.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
+    ∀ {𝓧 : Cat.Obj} (g : Cat.Hom 𝓧 (obj 𝓐 𝓑)), g = curry (Cat.seq (g × Cat.id) eval) := sorry
+
+  /--
+  For any `u`, the category of all `Category.{u, u}` categories is cartesian closed.
+  -/
+  def Cat_is_CC.{u} : CartesianClosedCategory Cat.{u} :=
     {
       terminal := Cat.terminal
       prod := Cat.prod
-      exp := Cat.exp
+      exp := fun 𝓐 𝓑 => {
+        obj := Cat.exp.obj 𝓐 𝓑
+        any_product := fun 𝓧 => Cat.prod 𝓧 𝓐
+        curry := Cat.exp.curry
+        eval := Cat.exp.eval
+        proof_exists := Cat.exp.proof_exists
+        proof_unique := Cat.exp.proof_unique
+      }
     }
 
 end CategoryOfCategories
