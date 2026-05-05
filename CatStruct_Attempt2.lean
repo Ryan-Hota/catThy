@@ -399,17 +399,23 @@ namespace CategoryOfCategories
       . ext
         simp [← F.proof_comp, prod, ← 𝟙▷, ← ▷𝟙]
 
+  def Cat.exp.proof_unique'.{u} {𝓐 𝓑 : Cat.{u}.Obj} {𝓧 : Cat.Obj} (G : Func 𝓧 (obj 𝓐 𝓑)) :
+    G.Obj = (curry (seq (G × Cat.id) eval)).Obj := by
+      simp [eval, prod, times, seq, curry, obj, Cat, Func.proof_id, ← Category.id_right]
+      rfl
+
   def Cat.exp.proof_unique.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
     ∀ {𝓧 : Cat.Obj} (G : Cat.Hom 𝓧 (obj 𝓐 𝓑)), G = curry (seq (G × Cat.id) eval) := by
       intro 𝓧 G
-      simp [seq, eval, curry, prod, times, Cat]
-      ext
-      . expose_names
-        simp [fun {X Y} (f : 𝓐.Hom X Y) => (G.Mor (X := x) 𝓧.id).proof f]
-        simp [G.proof_id, obj, ← 𝟙▷]
-        rfl
-      . simp [Func.proof_id, ← 𝟙▷]
-        sorry
+      suffices @Eq (Func _ _) _ _ by
+        trivial
+      ext -- Or `rw [@Func.ext_iff]`
+      . simp [←proof_unique']
+      . apply heq_of_eqRec_eq
+        rotate_left
+        . rw [proof_unique']
+        .
+          sorry
 
   /--
   For any `u`, the category of all `Category.{u, u}` categories is cartesian closed.
