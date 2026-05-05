@@ -48,14 +48,14 @@ namespace CategoryTheory
   infixr : 100 " ⊤ " => Terminal
 
   structure Product (A B : 𝓒.Obj) where
-    obj : Obj
-    fst : obj ⟶ A
-    snd : obj ⟶ B
-    pair {X : Obj} : X ⟶ A → X ⟶ B → X ⟶ obj
+    P : Obj
+    fst : P ⟶ A
+    snd : P ⟶ B
+    pair {X : Obj} : X ⟶ A → X ⟶ B → X ⟶ P
     proof_exists {X : Obj} :
       ∀ fa : X ⟶ A, ∀ fb,
         pair fa fb ▷ fst = fa ∧ pair fa fb ▷ snd = fb
-    proof_unique {X : Obj} : ∀ g : X ⟶ obj,
+    proof_unique {X : Obj} : ∀ g : X ⟶ P,
         g = pair (g ▷ fst) (g ▷ snd)
 
   infixr : 80 " × " => Product
@@ -70,7 +70,7 @@ namespace CategoryTheory
     {Prod_of_Ds : D × D'}
     {Prod_of_Cs : C × C'}
     (f : D ⟶ C) (f' : D' ⟶ C')
-    : Prod_of_Ds.obj ⟶ Prod_of_Cs.obj :=
+    : Prod_of_Ds.P ⟶ Prod_of_Cs.P :=
       ⟨fst ▷ f, snd ▷ f'⟩
 
   infixl : 80 " × " => times
@@ -93,10 +93,11 @@ namespace CategoryTheory
   notation "inr" => Coproduct.inr _
   notation "["f","g"]"  => Coproduct.either _ f g
 
-   structure Func (𝓐 𝓑 : Category) where
+  structure Func (𝓐 𝓑 : Category) where
     _Obj : 𝓐.Obj → 𝓑.Obj
     _Mor {X Y : 𝓐.Obj} : X ⟶ Y → _Obj X ⟶ _Obj Y
-    proof {X Y Z : 𝓐.Obj} :
+    preserve_id {X : 𝓐.Obj} : _Mor ( 𝟙 : X ⟶ X ) = 𝟙
+    dist_over_seq {X Y Z : 𝓐.Obj} :
       ∀ (f : X ⟶ Y) (g : Y ⟶ Z), _Mor (f ▷ g) = _Mor f ▷ _Mor g
 
   structure NatTransform {𝓐 𝓑 : Category} (F G : Func 𝓐 𝓑) where
@@ -107,10 +108,10 @@ namespace CategoryTheory
   structure Exponential (A B : 𝓒.Obj) where
     obj : Obj
     any_product (X : Obj) : X × A
-    curry {X : Obj} : (any_product X).obj ⟶ B → X ⟶ obj
-    eval : (any_product obj).obj ⟶ B
+    curry {X : Obj} : (any_product X).P ⟶ B → X ⟶ obj
+    eval : (any_product obj).P ⟶ B
     proof_exists {X : Obj} :
-      ∀ f : (any_product X).obj ⟶ B ,
+      ∀ f : (any_product X).P ⟶ B ,
         (curry f × 𝟙) ▷ eval = f
     proof_unique {X : Obj} :
       ∀ g : X ⟶ obj ,
@@ -123,11 +124,11 @@ namespace CategoryTheory
   notation "∃!(⟶⟹)" => Exponential.proof_unique _
   notation "ε" => Exponential.eval _
 
-  structure CartesianClosedCategory (Cat : Category) where
+  structure CartesianClosedCategory (𝓒 : Category) where
     mk ::
-      terminal : @Terminal Cat
-      prod (A B : Cat.Obj) : Product A B
-      exp  (A B : Cat.Obj) : Exponential A B
+      terminal : @Terminal 𝓒
+      prod (A B : 𝓒.Obj) : Product A B
+      exp  (A B : 𝓒.Obj) : Exponential A B
 
 -----------------------------------------------------------------------
 
@@ -147,8 +148,8 @@ namespace CategoryTheory
       rw[∃!(⊥⟶) 𝟙]
     .mk (f I I') (f I' I) ⟨proof I I', proof I' I⟩
 
-  def products_iso {A B : 𝓒.Obj} (P P' : A × B) : P.obj ≅ P'.obj :=
-    let f (P P' : A × B) : P.obj ⟶ P'.obj := ⟨fst,snd⟩
+  def products_iso {A B : 𝓒.Obj} (P P' : A × B) : P.P ≅ P'.P :=
+    let f (P P' : A × B) : P.P ⟶ P'.P := ⟨fst,snd⟩
     have proof (P P' : A × B) : f P P' ▷ f P' P = 𝟙 := by
       let fwd := f P P' ; let bck := f P' P
       rw [∃!(⟶×) (fwd ▷ bck)]
@@ -160,7 +161,7 @@ namespace CategoryTheory
     .mk (f P P') (f P' P) ⟨proof P P', proof P' P⟩
 
   theorem pair_seq {A B C1 C2 : 𝓒.Obj} {P : C1 × C2}
-  : ∀ f (g : B ⟶ _) h, f▷⟨g,h⟩ = (⟨f▷g,f▷h⟩ : A ⟶ P.obj) := by
+  : ∀ f (g : B ⟶ _) h, f▷⟨g,h⟩ = (⟨f▷g,f▷h⟩ : A ⟶ P.P) := by
     intro f g h
     rw[∃!(⟶×) (f▷⟨g,h⟩)]
     repeat rw[𝓒.assoc]
@@ -169,7 +170,7 @@ namespace CategoryTheory
   theorem times_seq {X0 X1 X2 Y0 Y1 Y2 : 𝓒.Obj}
     {P0 : X0 × Y0} {P1 : X1 × Y1} {P2 : X2 × Y2}
     : ∀ {a : X0 ⟶ X1} {b : Y0 ⟶ Y1} {c : X1 ⟶ X2} {d : Y1 ⟶ Y2},
-    ((a×b : _ ⟶ P1.obj)▷(c×d)) = ((a▷c)×(b▷d) : P0.obj ⟶ P2.obj) := by
+    ((a×b : _ ⟶ P1.P)▷(c×d)) = ((a▷c)×(b▷d) : P0.P ⟶ P2.P) := by
     intro a b c d
     dsimp[times]
     rw[pair_seq]
@@ -199,9 +200,9 @@ namespace CategoryTheory
     .mk (f E E') (f E' E) ⟨proof E E', proof E' E⟩
 
   def exp_dist_prod {A B C : 𝓒.Obj}
-  (AxB : A × B) (AxBeC : C ⟹ AxB.obj)
+  (AxB : A × B) (AxBeC : C ⟹ AxB.P)
   (AeC : C ⟹ A) (BeC : C ⟹ B) (AeCxBeC : AeC.obj × BeC.obj)
-  : AxBeC.obj ≅ AeCxBeC.obj :=
+  : AxBeC.obj ≅ AeCxBeC.P :=
     let curry' {X : Obj} : _ → X ⟶ _ := fun f =>
       ⟨curry ((𝟙×𝟙)▷f▷fst), curry ((𝟙×𝟙)▷f▷snd)⟩
     let eval' := ⟨(fst × 𝟙)▷ε, (snd × 𝟙)▷ε⟩
@@ -236,7 +237,7 @@ namespace CategoryTheory
       repeat rw[← 𝟙▷]
       repeat rw[← ∃!(⟶⟹) _]
       rw[← ∃!(⟶×)]
-    exps_iso AxBeC (.mk AeCxBeC.obj AxBeC.any_product curry' eval' proof_exists' proof_unique')
+    exps_iso AxBeC (.mk AeCxBeC.P AxBeC.any_product curry' eval' proof_exists' proof_unique')
 
 end CategoryTheory
 
@@ -303,16 +304,20 @@ namespace CategoryOfCategories
       let FG_Obj : 𝓧.Obj → 𝓩.Obj := G._Obj ∘ F._Obj
       let FG_Mor {A B : 𝓧.Obj}
         : A ⟶ B → FG_Obj A ⟶ FG_Obj B := G._Mor ∘ F._Mor
-      have proof {P Q R : 𝓧.Obj}
+      have preserve_id {X : 𝓧.Obj} : FG_Mor ( 𝟙 : X ⟶ X ) = 𝟙 := by
+        dsimp [FG_Mor]
+        simp [F.preserve_id, G.preserve_id]
+        rfl
+      have dist_over_seq {P Q R : 𝓧.Obj}
         : ∀ (f : P ⟶ Q) (g : Q ⟶ R), FG_Mor (f ▷ g) = FG_Mor f ▷ FG_Mor g := by
           intro f g
           dsimp [FG_Mor]
-          have h2 := G.proof (F._Mor f) (F._Mor g)
-          rw [← (F.proof f g)] at h2
+          have h2 := G.dist_over_seq (F._Mor f) (F._Mor g)
+          rw [← (F.dist_over_seq f g)] at h2
           exact h2
-      .mk FG_Obj FG_Mor proof
+      .mk FG_Obj FG_Mor preserve_id dist_over_seq
     have assoc := by simp ; exact ⟨rfl, rfl⟩
-    let id {𝓧 : Category} : Func 𝓧 𝓧 := .mk id id (fun _ _ => rfl)
+    let id {𝓧 : Category} : Func 𝓧 𝓧 := .mk id id rfl (fun _ _ => rfl)
     have id_left  := by simp
     have id_right := by simp
     .mk Category Func seq assoc id id_left id_right
@@ -333,6 +338,7 @@ namespace CategoryOfCategories
           (fun _ => ())
           (fun _ => ())
           (by grind only)
+          (by grind only)
         )
         (by intro _ _; congr)
     let prod := fun 𝓐 𝓑 => .mk
@@ -348,17 +354,20 @@ namespace CategoryOfCategories
       (.mk
         (by simp only; exact fun a => a.fst)
         (by simp only [id_eq]; exact fun a => a.fst)
+        sorry
         (by simp only [id_eq, implies_true])
       )
       (.mk
         (by simp only; exact fun a => a.snd)
         (by simp only [id_eq]; exact fun a => a.snd)
+        sorry
         (by simp only [id_eq, implies_true])
       )
-      (fun f g => .mk
-        (fun x => (f._Obj x, g._Obj x))
-        (fun x => (f._Mor x, g._Mor x))
-        (by simp only [f.proof, g.proof, implies_true])
+      (fun F G => .mk
+        (fun X => (F._Obj X, G._Obj X))
+        (fun f => (F._Mor f, G._Mor f))
+        sorry
+        (by simp only [F.dist_over_seq, G.dist_over_seq, implies_true] )
       )
       (by
         intro _ _ _
@@ -387,19 +396,21 @@ namespace CategoryOfCategories
         (fun x => .mk
           (fun a => F._Obj (x, a))
           (fun f => F._Mor (𝟙, f))
-          (by simp only [id_eq, ← F.proof, ← 𝟙▷, implies_true, prod])
+          (by simp only [id_eq, ← F.dist_over_seq, ← 𝟙▷, implies_true, prod])
         )
         (fun f => .mk
           (fun _ => F._Mor (f, 𝟙))
-          (by simp only [id_eq, ← F.proof, ← 𝟙▷, ← ▷𝟙, implies_true, prod])
+          (by simp only [id_eq, ← F.dist_over_seq, ← 𝟙▷, ← ▷𝟙, implies_true, prod])
         )
-        (by simp only [id_eq, ← F.proof, ← 𝟙▷, implies_true, prod])
+        sorry
+        (by simp only [id_eq, ← F.dist_over_seq, ← 𝟙▷, implies_true, prod])
       )
       (.mk
         (by simp only [prod]; exact fun (F, a) => F._Obj a)
         (by simp only [id_eq, prod]; intro (F,_) (_,b) (τ, f); exact F._Mor f ▷ τ.component b)
-        (by
-          simp only [id_eq, NatTransform.proof, Func.proof, Category.assoc, Prod.forall, prod]
+        sorry
+        ( by
+          simp only [id_eq, NatTransform.proof, Func.dist_over_seq, Category.assoc, Prod.forall, prod]
           intros
           simp only [← Category.assoc, NatTransform.proof]
         )
