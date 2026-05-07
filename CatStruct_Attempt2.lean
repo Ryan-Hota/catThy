@@ -399,39 +399,80 @@ namespace CategoryOfCategories
       . ext
         simp [← F.proof_comp, prod, ← 𝟙▷, ← ▷𝟙]
 
-  def Cat.exp.proof_unique'.{u} {𝓐 𝓑 : Cat.{u}.Obj} {𝓧 : Cat.Obj} (G : Func 𝓧 (obj 𝓐 𝓑)) :
-    G.Obj = (curry (seq (G × Cat.id) eval)).Obj := by
-      simp [eval, prod, times, seq, curry, obj, Cat, Func.proof_id, ← Category.id_right]
-      rfl
+  -----------------------------------------------------------------------------------------------------------
+
+  -- # UNDER CONSTRUCTION!
+
+  -- Mathlib's CategoryTheory.eqToHom
+  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/CategoryTheory/EqToHom.html#CategoryTheory.eqToHom
+  def eqToHom {𝓒 : Category} {X Y : 𝓒.Obj} (p : X = Y) :
+    X ⟶ Y := by
+      rw [p]
+      exact 𝓒.id
+
+  -- Mathlib's CategoryTheory.Functor.ext
+  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/CategoryTheory/EqToHom.html#CategoryTheory.Functor.ext
+  -- We will use this as inspiration. With a simple enough proof of h_mor, the `simpa` tactic should
+  -- work out.
+  --
+  -- theorem Func.ext {𝓒 𝓓} {G H : Func 𝓒 𝓓}
+  --   (h_obj : ∀ X, G.Obj X = H.Obj X)
+  --   (h_mor : ∀ X Y f, G.Mor f = eqToHom (h_obj X) ▷ H.Mor f ▷ eqToHom (h_obj Y).symm) :
+  --   G = H := by
+  --     match G, H with
+  --     | .mk G_Obj _ _ _, .mk H_Obj _ _ _ =>
+  --       obtain rfl : G_Obj = H_Obj := by
+  --         ext
+  --         apply h_obj
+  --       congr
+  --       funext X Y f
+  --       simpa using h_mor X Y f
+
+
+  -- Have a look here for more ideas:
+  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/CategoryTheory/EqToHom.html#Morphisms-from-equations-between-objects
 
   def Cat.exp.proof_unique.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
     ∀ {𝓧 : Cat.Obj} (G : Cat.Hom 𝓧 (obj 𝓐 𝓑)), G = curry (seq (G × Cat.id) eval) := by
       intro 𝓧 G
-      suffices @Eq (Func _ _) _ _ by
-        trivial
-      ext -- Or `rw [@Func.ext_iff]`
-      . simp [←proof_unique']
-      . apply heq_of_eqRec_eq
-        rotate_left
-        . rw [proof_unique']
-        .
-          sorry
+      generalize hH : curry (seq (G × Cat.id) eval) = H
+      have h_obj : ∀ X, G.Obj X = H.Obj X := by
+        simp [hH.symm]
+        dsimp [curry, seq, eval, Cat, times, prod, obj]
+        intro X
+        simp [Func.proof_id, ←𝓑.id_right]
+        rfl
+      have h_mor : ∀ X Y f, G.Mor f = eqToHom (h_obj X) ▷ H.Mor f ▷ eqToHom (h_obj Y).symm := by
+        intro X Y f
+        dsimp [obj]
+
+        sorry
+      match G, H with
+      | .mk G_Obj _ _ _, .mk H_Obj _ _ _ =>
+        obtain rfl : G_Obj = H_Obj := by
+          ext
+          apply h_obj
+        congr
+        funext X Y f
+        -- simpa using h_mor X Y f
+        sorry
+
+  ------------------------------------------------------------------------------------------------------------
 
   /--
   For any `u`, the category of all `Category.{u, u}` categories is cartesian closed.
   -/
-  def Cat_is_CC.{u} : CartesianClosedCategory Cat.{u} :=
-    {
-      terminal := Cat.terminal
-      prod := Cat.prod
-      exp := fun 𝓐 𝓑 => {
-        obj := Cat.exp.obj 𝓐 𝓑
-        any_product := fun 𝓧 => Cat.prod 𝓧 𝓐
-        curry := Cat.exp.curry
-        eval := Cat.exp.eval
-        proof_exists := Cat.exp.proof_exists
-        proof_unique := Cat.exp.proof_unique
-      }
+  def Cat_is_CC.{u} : CartesianClosedCategory Cat.{u} := {
+    terminal := Cat.terminal
+    prod := Cat.prod
+    exp := fun 𝓐 𝓑 => {
+      obj := Cat.exp.obj 𝓐 𝓑
+      any_product := fun 𝓧 => Cat.prod 𝓧 𝓐
+      curry := Cat.exp.curry
+      eval := Cat.exp.eval
+      proof_exists := Cat.exp.proof_exists
+      proof_unique := Cat.exp.proof_unique
     }
+  }
 
 end CategoryOfCategories
