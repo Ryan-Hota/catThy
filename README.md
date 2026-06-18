@@ -9,6 +9,7 @@ This is the base code that we came up with, and in this file we have:
 - Certain basic category theoretical definitions (initial and terminal objects, functors, natural transformations, exponential objects, Cartesian closed categories, etc.)
 - Some basic theorems to get started working with them
 - An example implementation of a category (the posetal category of natural numbers ordered by divisibility)
+- Introduced some notation in an attempt to simplify proofwriting
 
 #### `Attempt_2.lean`
 
