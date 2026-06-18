@@ -1,5 +1,3 @@
--- TODO set operator precedences
-
 namespace CategoryTheory
 
   @[ext]
@@ -16,13 +14,11 @@ namespace CategoryTheory
   notation "_Obj" => Category.Obj _
   infixr : 60 " ⟶ " => Category.Hom _
   infixl : 70 " ▷ " => Category.seq _
-  -- notation "▷assoc" => Category.assoc _
-  -- TODO notation "▷(▷)=(▷)▷" => (Category.assoc _).symm
   notation "𝟙" => Category.id _
   notation "𝟙▷" => Category.id_left _
   notation "▷𝟙" => Category.id_right _
 
-  -----------------------------------------------------------------------
+  -------------------------------------------------------------------------------------------
 
   @[ext]
   structure Isomorphic.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} (A B : 𝓒.Obj) where
@@ -137,7 +133,7 @@ namespace CategoryTheory
     prod (A B : 𝓒.Obj) : Product A B
     exp  (A B : 𝓒.Obj) : Exponential A B
 
------------------------------------------------------------------------
+  -------------------------------------------------------------------------------------------
 
   theorem eq_id_left.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} {X : 𝓒.Obj} {e : X ⟶ X}
     (h : ∀ Y, ∀ f : X ⟶ Y, e ▷ f = f) : e = 𝟙 :=
@@ -250,11 +246,11 @@ end CategoryTheory
 
 
 
+-------------------------------------------------------------------------------------------
+
 namespace CategoryOfCategories
 
   open CategoryTheory
-
-  -- TODO : Switch direction of things like Functor.proof, 𝟙▷, ▷𝟙
 
   def seq.{u} {𝓧 𝓨 𝓩 : Category.{u, u}} : Func 𝓧 𝓨 → Func 𝓨 𝓩 → Func 𝓧 𝓩 := fun F G =>
     {
@@ -401,61 +397,11 @@ namespace CategoryOfCategories
 
   -----------------------------------------------------------------------------------------------------------
 
-  -- # UNDER CONSTRUCTION!
-
-  -- Mathlib's CategoryTheory.eqToHom
-  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/CategoryTheory/EqToHom.html#CategoryTheory.eqToHom
-  def eqToHom {𝓒 : Category} {X Y : 𝓒.Obj} (p : X = Y) :
-    X ⟶ Y := by
-      rw [p]
-      exact 𝓒.id
-
-  -- Mathlib's CategoryTheory.Functor.ext
-  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/CategoryTheory/EqToHom.html#CategoryTheory.Functor.ext
-  -- We will use this as inspiration. With a simple enough proof of h_mor, the `simpa` tactic should
-  -- work out.
-  --
-  -- theorem Func.ext {𝓒 𝓓} {G H : Func 𝓒 𝓓}
-  --   (h_obj : ∀ X, G.Obj X = H.Obj X)
-  --   (h_mor : ∀ X Y f, G.Mor f = eqToHom (h_obj X) ▷ H.Mor f ▷ eqToHom (h_obj Y).symm) :
-  --   G = H := by
-  --     match G, H with
-  --     | .mk G_Obj _ _ _, .mk H_Obj _ _ _ =>
-  --       obtain rfl : G_Obj = H_Obj := by
-  --         ext
-  --         apply h_obj
-  --       congr
-  --       funext X Y f
-  --       simpa using h_mor X Y f
-
-
-  -- Have a look here for more ideas:
-  -- https://leanprover-community.github.io/mathlib4_docs/Mathlib/CategoryTheory/EqToHom.html#Morphisms-from-equations-between-objects
+  --# 
 
   def Cat.exp.proof_unique.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
     ∀ {𝓧 : Cat.Obj} (G : Cat.Hom 𝓧 (obj 𝓐 𝓑)), G = curry (seq (G × Cat.id) eval) := by
-      intro 𝓧 G
-      generalize hH : curry (seq (G × Cat.id) eval) = H
-      have h_obj : ∀ X, G.Obj X = H.Obj X := by
-        simp [hH.symm]
-        dsimp [curry, seq, eval, Cat, times, prod, obj]
-        intro X
-        simp [Func.proof_id, ←𝓑.id_right]
-        rfl
-      have h_mor : ∀ X Y f, G.Mor f = eqToHom (h_obj X) ▷ H.Mor f ▷ eqToHom (h_obj Y).symm := by
-        intro X Y f
-        dsimp [obj]
-
-        sorry
-      match G, H with
-      | .mk G_Obj _ _ _, .mk H_Obj _ _ _ =>
-        obtain rfl : G_Obj = H_Obj := by
-          ext
-          apply h_obj
-        congr
-        funext X Y f
-        -- simpa using h_mor X Y f
-        sorry
+      sorry
 
   ------------------------------------------------------------------------------------------------------------
 

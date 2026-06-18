@@ -1,5 +1,3 @@
--- TODO set operator precedences
-
 namespace CategoryTheory
 
   structure Category.{u, v} where
@@ -15,8 +13,6 @@ namespace CategoryTheory
   notation "Obj" => Category.Obj _
   infixr : 60 " ⟶ " => Category.Hom _
   infixl : 70 " ▷ " => Category.seq _
-  -- notation "▷assoc" => Category.assoc _
-  -- TODO notation "▷(▷)=(▷)▷" => (Category.assoc _).symm
   notation "𝟙" => Category.id _
   notation "𝟙▷" => Category.id_left _
   notation "▷𝟙" => Category.id_right _
@@ -243,26 +239,7 @@ end CategoryTheory
 
 -------------------------------------------------------------------------------------------
 
---# We shall now try implementing some categories.
-
---# Category Template
-
--- namespace CategoryName
-
---   open CategoryTheory
-
---   def ℂ : Category :=
---     let Object : Sort _ := sorry
---     let hom : Object → Object → Sort _ := sorry
---     let seq {x y z : Object} : hom x y → hom y z → hom x z := sorry
---     have assoc {w x y z : Object} {f : hom w x} {g : hom x y} {h: hom y z}
---       : seq (seq f g) h = seq f (seq g h) := sorry
---     let id {x : Object} : hom x x := sorry
---     have id_left  {x y : Object} (f : hom x y) : seq id f  = f := sorry
---     have id_right {x y : Object} (f : hom x y) : seq f  id = f := sorry
---     Category.mk Object hom seq @assoc id id_left id_right
-
--- end categoryName
+--# We shall now provide an example of how to implement a Category.
 
 -------------------------------------------------------------------------------------------
 
@@ -272,6 +249,7 @@ namespace DivCategory
 
   def Divides (a b : Nat) := ∃ c, a * c = b
 
+  -- The posetal category of Natural numbers ordered by divisibility.
   def DividesPoset : Category :=
     let Object : Sort _ := Nat
     let hom : Object → Object → Sort _ := Divides
@@ -294,129 +272,3 @@ namespace DivCategory
 end DivCategory
 
 -------------------------------------------------------------------------------------------
-
-namespace CategoryOfCategories
-
-  open CategoryTheory
-
-  def Cat : Category :=
-    let seq {𝓧 𝓨 𝓩 : Category} : Func 𝓧 𝓨 → Func 𝓨 𝓩 → Func 𝓧 𝓩 := fun F G =>
-      let FG_Obj : 𝓧.Obj → 𝓩.Obj := G._Obj ∘ F._Obj
-      let FG_Mor {A B : 𝓧.Obj}
-        : A ⟶ B → FG_Obj A ⟶ FG_Obj B := G._Mor ∘ F._Mor
-      have preserve_id {X : 𝓧.Obj} : FG_Mor ( 𝟙 : X ⟶ X ) = 𝟙 := by
-        dsimp [FG_Mor]
-        simp [F.preserve_id, G.preserve_id]
-        rfl
-      have dist_over_seq {P Q R : 𝓧.Obj}
-        : ∀ (f : P ⟶ Q) (g : Q ⟶ R), FG_Mor (f ▷ g) = FG_Mor f ▷ FG_Mor g := by
-          intro f g
-          dsimp [FG_Mor]
-          have h2 := G.dist_over_seq (F._Mor f) (F._Mor g)
-          rw [← (F.dist_over_seq f g)] at h2
-          exact h2
-      .mk FG_Obj FG_Mor preserve_id dist_over_seq
-    have assoc := by simp ; exact ⟨rfl, rfl⟩
-    let id {𝓧 : Category} : Func 𝓧 𝓧 := .mk id id rfl (fun _ _ => rfl)
-    have id_left  := by simp
-    have id_right := by simp
-    .mk Category Func seq assoc id id_left id_right
-
-  def Cat_is_CC : CartesianClosedCategory Cat :=
-    let terminal :=
-      .mk
-        (.mk
-          Unit
-          (fun _ _ => Unit)
-          (fun _ _ => ())
-          (by simp only [implies_true])
-          ()
-          (by simp only [implies_true])
-          (by simp only [implies_true])
-        )
-        (fun _ => .mk
-          (fun _ => ())
-          (fun _ => ())
-          (by grind only)
-          (by grind only)
-        )
-        (by intro _ _; congr)
-    let prod := fun 𝓐 𝓑 => .mk
-      (.mk
-        (𝓐.Obj × 𝓑.Obj)
-        (fun (w,x) (y,z) => (w ⟶ y) × (x ⟶ z))
-        (fun a b => (a.fst ▷ b.fst, a.snd ▷ b.snd))
-        (by simp only [𝓐.assoc, 𝓑.assoc, implies_true])
-        (𝟙, 𝟙)
-        (by simp only [← 𝟙▷, implies_true])
-        (by simp only [← ▷𝟙, implies_true])
-      )
-      (.mk
-        (by simp only; exact fun a => a.fst)
-        (by simp only [id_eq]; exact fun a => a.fst)
-        sorry
-        (by simp only [id_eq, implies_true])
-      )
-      (.mk
-        (by simp only; exact fun a => a.snd)
-        (by simp only [id_eq]; exact fun a => a.snd)
-        sorry
-        (by simp only [id_eq, implies_true])
-      )
-      (fun F G => .mk
-        (fun X => (F._Obj X, G._Obj X))
-        (fun f => (F._Mor f, G._Mor f))
-        sorry
-        (by simp only [F.dist_over_seq, G.dist_over_seq, implies_true] )
-      )
-      (by
-        intro _ _ _
-        refine And.intro ?_ ?_
-        all_goals congr
-      )
-      (by intro _ _; congr)
-    let exp := fun 𝓐 𝓑 => .mk
-      (.mk
-        (Func 𝓐 𝓑)
-        (fun F G => NatTransform F G)
-        (fun τ₁ τ₂ => .mk
-          (fun a => τ₁.component a ▷ τ₂.component a)
-          (by
-            simp only [𝓑.assoc, ← τ₂.proof]
-            simp only [← 𝓑.assoc, τ₁.proof, implies_true]
-          )
-        )
-        (by simp only [𝓑.assoc, implies_true])
-        (.mk (fun x => 𝟙) (by grind only [𝟙▷, ▷𝟙]))
-        (by simp only [← 𝟙▷, implies_true])
-        (by simp only [← ▷𝟙, implies_true])
-      )
-      (fun 𝓧 => prod 𝓧 𝓐)
-      (fun F => .mk
-        (fun x => .mk
-          (fun a => F._Obj (x, a))
-          (fun f => F._Mor (𝟙, f))
-          (by simp only [id_eq, ← F.dist_over_seq, ← 𝟙▷, implies_true, prod])
-        )
-        (fun f => .mk
-          (fun _ => F._Mor (f, 𝟙))
-          (by simp only [id_eq, ← F.dist_over_seq, ← 𝟙▷, ← ▷𝟙, implies_true, prod])
-        )
-        sorry
-        (by simp only [id_eq, ← F.dist_over_seq, ← 𝟙▷, implies_true, prod])
-      )
-      (.mk
-        (by simp only [prod]; exact fun (F, a) => F._Obj a)
-        (by simp only [id_eq, prod]; intro (F,_) (_,b) (τ, f); exact F._Mor f ▷ τ.component b)
-        sorry
-        ( by
-          simp only [id_eq, NatTransform.proof, Func.dist_over_seq, Category.assoc, Prod.forall, prod]
-          intros
-          simp only [← Category.assoc, NatTransform.proof]
-        )
-      )
-      sorry
-      sorry
-    .mk terminal prod exp
-
-end CategoryOfCategories
