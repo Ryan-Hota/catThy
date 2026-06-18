@@ -1,6 +1,6 @@
 This project is [Ryan Hota](https://github.com/Ryan-Hota) and [Soham Saha](https://github.com/Soham-Saha)'s submission for the course **Introduction to Formal Proofs with Lean** at CMI in Jan-Apr, 2026.
 
-This project attempts to implement a formal framework for doing category theory in Lean from scratch (i.e., without using any `import`s). 
+In this project, we attempt to implement a formal framework for doing category theory in Lean from scratch (i.e., without using any `import`s). 
 
 #### `Attempt_1.lean`
 
@@ -8,8 +8,8 @@ This is the base code that we came up with, and in this file we have:
 - Definition of a category
 - Certain basic category theoretical definitions (initial and terminal objects, functors, natural transformations, exponential objects, Cartesian closed categories, etc.)
 - Some basic theorems to get started working with them
-- An example implementation of a category (the posetal category of natural numbers ordered by divisibility)
 - Introduced some notation in an attempt to simplify proofwriting
+- An example implementation of a category (the posetal category of natural numbers ordered by divisibility)
 
 #### `Attempt_2.lean`
 

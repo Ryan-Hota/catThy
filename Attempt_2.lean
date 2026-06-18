@@ -395,14 +395,21 @@ namespace CategoryOfCategories
       . ext
         simp [← F.proof_comp, prod, ← 𝟙▷, ← ▷𝟙]
 
+  /--
+  The unfinished part of our proof attempts to show that two functors are equal, where the 
+  more suitable notion might have been showing them to be isomorphic. Our attempts at proving 
+  functorial equality immediately led us into dependent type theory hell 
+  <https://leanprover-community.github.io/mathlib4_docs/Mathlib/CategoryTheory/EqToHom.html>, 
+  and we have barely returned unscathed.
+  
+  Yet, our work demonstrates that while showing existence of "strict" exponential objects might 
+  be tricky in the dependent type-theoretic framework, slightly relaxing the conditions might 
+  just work (and would better satisfy the principle of equivalence 
+  <https://ncatlab.org/nlab/show/principle+of+equivalence>).
+  -/
   def Cat.exp.proof_unique.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
     ∀ {𝓧 : Cat.Obj} (G : Cat.Hom 𝓧 (obj 𝓐 𝓑)), G = curry (seq (G × Cat.id) eval) := by
       sorry
-  /-
-  The unfinished part of our proof attempts to show that two functors are equal, where the more suitable notion might have been showing them to be isomorphic. Our attempts at proving functorial equality immediately led us into dependent type theory hell <https://leanprover-community.github.io/mathlib4_docs/Mathlib/CategoryTheory/EqToHom.html>, and we have barely returned unscathed.
-  
-  Yet, our work demonstrates that while showing existence of "strict" exponential objects might be tricky in the dependent type-theoretic framework, slightly relaxing the conditions might just work (and would better satisfy the principle of equivalence <https://ncatlab.org/nlab/show/principle+of+equivalence>).
-  -/
 
   /--
   For any `u`, the category of all `Category.{u, u}` categories is cartesian closed.
