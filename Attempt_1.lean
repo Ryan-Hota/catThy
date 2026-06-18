@@ -249,7 +249,7 @@ namespace DivCategory
 
   def Divides (a b : Nat) := ∃ c, a * c = b
 
-  -- The posetal category of Natural numbers ordered by divisibility.
+  -- The posetal category of natural numbers ordered by divisibility.
   def DividesPoset : Category :=
     let Object : Sort _ := Nat
     let hom : Object → Object → Sort _ := Divides

@@ -395,15 +395,11 @@ namespace CategoryOfCategories
       . ext
         simp [← F.proof_comp, prod, ← 𝟙▷, ← ▷𝟙]
 
-  -----------------------------------------------------------------------------------------------------------
-
-  --# 
-
+  -- TODO
   def Cat.exp.proof_unique.{u} {𝓐 𝓑 : Cat.{u}.Obj} :
     ∀ {𝓧 : Cat.Obj} (G : Cat.Hom 𝓧 (obj 𝓐 𝓑)), G = curry (seq (G × Cat.id) eval) := by
       sorry
 
-  ------------------------------------------------------------------------------------------------------------
 
   /--
   For any `u`, the category of all `Category.{u, u}` categories is cartesian closed.
