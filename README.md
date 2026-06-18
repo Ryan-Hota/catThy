@@ -1,3 +1,5 @@
+This project is [Ryan Hota](https://github.com/Ryan-Hota) and [Soham Saha](https://github.com/Soham-Saha)'s submission for the course **Introduction to Formal Proofs with Lean** at CMI in Jan-Apr, 2026.
+
 This project attempts to implement a formal framework for doing category theory in Lean from scratch (i.e., without using any `import`s). 
 
 #### `Attempt_1.lean`
@@ -23,5 +25,3 @@ Yet, our work demonstrates that while showing existence of "strict" exponential 
 During the development of this project, we saw strange Lean quirks, spoke with a lot of people on the Lean Zulip chat, started hating heterogeneous equality, and meddled with category theory.
 
 Overall, we did have a lot of fun, and learnt a lot too.
-
-This project is [Ryan Hota](https://github.com/Ryan-Hota) and [Soham Saha](https://github.com/Soham-Saha)'s submission for the course **Introduction to Formal Proofs with Lean** at CMI in Jan-Apr, 2026.
