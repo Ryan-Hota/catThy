@@ -1,5 +1,3 @@
--- TODO set operator precedences
-
 namespace CategoryTheory
 
   @[ext]
@@ -16,30 +14,11 @@ namespace CategoryTheory
   notation "_Obj" => Category.Obj _
   infixr : 60 " ⟶ " => Category.Hom _
   infixl : 70 " ▷ " => Category.seq _
-  -- notation "▷assoc" => Category.assoc _
-  -- TODO notation "▷(▷)=(▷)▷" => (Category.assoc _).symm
   notation "𝟙" => Category.id _
   notation "𝟙▷" => Category.id_left _
   notation "▷𝟙" => Category.id_right _
 
   -----------------------------------------------------------------------
-
-  @[ext]
-  structure Isomorphic.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} (A B : 𝓒.Obj) where
-    fwd : A ⟶ B
-    bck : B ⟶ A
-    proof : fwd ▷ bck = 𝟙 ∧ bck ▷ fwd = 𝟙
-
-  infixr : 70 " ≅ " => Isomorphic
-
-  @[ext]
-  structure Initial.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} : Type (max u_1 u_2) where
-    obj : 𝓒.Obj
-    unique_to (X : _Obj) : obj ⟶ X
-    proof_unique {X : _Obj} : ∀ f : obj ⟶ X, f = unique_to X
-
-  notation "⊥" => Initial
-  notation "∃!(⊥⟶)" => Initial.proof_unique _
 
   @[ext]
   structure Terminal.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} : Type (max u_1 u_2) where
@@ -65,8 +44,6 @@ namespace CategoryTheory
   notation "_fst" => Product.fst _
   notation "_snd" => Product.snd _
   notation "⟨"f","g"⟩"  => Product.pair _ f g
-  notation "∃(⟶×)" => Product.proof_exists _
-  notation "∃!(⟶×)" => Product.proof_unique _
 
   def times.{u_1, u_2} {𝓒 : Category.{u_1, u_2}}
     {D D' C C' : 𝓒.Obj}
@@ -77,25 +54,6 @@ namespace CategoryTheory
       ⟨_fst ▷ f, _snd ▷ f'⟩
 
   infixl : 80 " × " => times
-
-  @[ext]
-  structure Coproduct.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} (A B : 𝓒.Obj) : Type (max u_1 u_2) where
-    obj : _Obj
-    inl : A ⟶ obj
-    inr : B ⟶ obj
-    either {X : _Obj} : A ⟶ X → B ⟶ X → obj ⟶ X
-    proof_exists {X :_Obj} :
-      ∀ fa : A ⟶ X,
-        ∀ fb : B ⟶ X,
-          inl ▷ either fa fb = fa ∧ inr ▷ either fa fb = fb
-    proof_unique {X : _Obj} :
-      ∀ g : obj ⟶ X,
-        g = either (inl ▷ g) (inr ▷ g)
-
-  infixr : 75 " + " => Coproduct
-  notation "_inl" => Coproduct.inl _
-  notation "_inr" => Coproduct.inr _
-  notation "["f","g"]"  => Coproduct.either _ f g
 
   @[ext]
   structure Exponential.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} (A B : 𝓒.Obj) : Type (max u_1 u_2) where
@@ -111,11 +69,6 @@ namespace CategoryTheory
         g = curry ((g × 𝟙) ▷ eval)
 
   infixl : 80 " ⟹ " => Exponential
-  notation "_×" => Exponential.any_product _
-  notation "_curry" => Exponential.curry _
-  notation "∃(⟶⟹)" => Exponential.proof_exists _
-  notation "∃!(⟶⟹)" => Exponential.proof_unique _
-  notation "ε" => Exponential.eval _
 
   @[ext]
   structure Func.{u_1, u_2} (𝓐 𝓑 : Category.{u_1, u_2}) : Type (max u_1 u_2) where
@@ -136,115 +89,6 @@ namespace CategoryTheory
     terminal : @Terminal 𝓒
     prod (A B : 𝓒.Obj) : Product A B
     exp  (A B : 𝓒.Obj) : Exponential A B
-
------------------------------------------------------------------------
-
-  theorem eq_id_left.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} {X : 𝓒.Obj} {e : X ⟶ X}
-    (h : ∀ Y, ∀ f : X ⟶ Y, e ▷ f = f) : e = 𝟙 :=
-      (▷𝟙 _).trans (h X 𝟙)
-
-  theorem eq_id_right.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} {X : 𝓒.Obj} {e : X ⟶ X}
-    (h : ∀ Y, ∀ f : Y ⟶ X, f ▷ e = f) : e = 𝟙 :=
-      (𝟙▷ _).trans (h X 𝟙)
-
-  def inits_iso.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} (I I' : @Initial 𝓒) : I.obj ≅ I'.obj :=
-    let f (I I' : ⊥) : I.obj ⟶ I'.obj := I.unique_to I'.obj
-    have proof (I I' : ⊥) : f I I' ▷ f I' I = 𝟙 := by
-      let fwd := f I I' ; let bck := f I' I
-      rw[∃!(⊥⟶) (fwd ▷ bck)]
-      rw[∃!(⊥⟶) 𝟙]
-    .mk (f I I') (f I' I) ⟨proof I I', proof I' I⟩
-
-  def products_iso.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} {A B : 𝓒.Obj} (P P' : A × B) : P.obj ≅ P'.obj :=
-    let f (P P' : A × B) : P.obj ⟶ P'.obj := ⟨_fst, _snd⟩
-    have proof (P P' : A × B) : f P P' ▷ f P' P = 𝟙 := by
-      let fwd := f P P' ; let bck := f P' P
-      rw [∃!(⟶×) (fwd ▷ bck)]
-      repeat rw [𝓒.assoc]
-      dsimp [bck]; rw[(∃(⟶×) _fst _snd).left, (∃(⟶×) _fst _snd).right]
-      dsimp [fwd]; rw[(∃(⟶×) _fst _snd).left, (∃(⟶×) _fst _snd).right]
-      rw [𝟙▷ _fst, 𝟙▷ _snd]
-      exact (∃!(⟶×) 𝟙).symm
-    .mk (f P P') (f P' P) ⟨proof P P', proof P' P⟩
-
-  theorem pair_seq.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} {A B C1 C2 : 𝓒.Obj} {P : C1 × C2}
-  : ∀ f (g : B ⟶ _) h, f▷⟨g,h⟩ = (⟨f▷g,f▷h⟩ : A ⟶ P.obj) := by
-    intro f g h
-    rw[∃!(⟶×) (f▷⟨g,h⟩)]
-    repeat rw[𝓒.assoc]
-    rw[(∃(⟶×) g h).left, (∃(⟶×) g h).right]
-
-  theorem times_seq.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} {X0 X1 X2 Y0 Y1 Y2 : 𝓒.Obj}
-    {P0 : X0 × Y0} {P1 : X1 × Y1} {P2 : X2 × Y2}
-    : ∀ {a : X0 ⟶ X1} {b : Y0 ⟶ Y1} {c : X1 ⟶ X2} {d : Y1 ⟶ Y2},
-    ((a×b : _ ⟶ P1.obj)▷(c×d)) = ((a▷c)×(b▷d) : P0.obj ⟶ P2.obj) := by
-    intro a b c d
-    dsimp[times]
-    rw[pair_seq]
-    repeat rw[← 𝓒.assoc]
-    rw[(∃(⟶×) _ _).left, (∃(⟶×) _ _).right]
-
-  def exps_iso.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} {A B : 𝓒.Obj} (E E' : B ⟹ A) : E.obj ≅ E'.obj :=
-    let f (E E' : B ⟹ A) : E.obj ⟶ E'.obj := _curry ( ( 𝟙 × 𝟙 ) ▷ ε )
-    have proof (E E' : B ⟹ A) : f E E' ▷ f E' E = 𝟙 := by
-      rw[∃!(⟶⟹) (f E E' ▷ f E' E)]
-      rw[𝟙▷ 𝟙]
-      rw[← times_seq]
-      rw[𝓒.assoc]
-      dsimp[f]
-      rw[∃(⟶⟹) _]
-      rw[← 𝓒.assoc]
-      rw[times_seq]
-      rw[← ▷𝟙]
-      rw[𝟙▷ (_curry ( ( 𝟙 × 𝟙 ) ▷ ε ))]
-      rw[← times_seq]
-      rw[𝓒.assoc]
-      rw[∃(⟶⟹) _]
-      rw[← 𝓒.assoc]
-      rw[times_seq]
-      repeat rw[← ▷𝟙]
-      rw[← ∃!(⟶⟹) 𝟙]
-    .mk (f E E') (f E' E) ⟨proof E E', proof E' E⟩
-
-  def exp_dist_prod.{u_1, u_2} {𝓒 : Category.{u_1, u_2}} {A B C : 𝓒.Obj}
-  (AxB : A × B) (AxBeC : C ⟹ AxB.obj)
-  (AeC : C ⟹ A) (BeC : C ⟹ B) (AeCxBeC : AeC.obj × BeC.obj)
-  : AxBeC.obj ≅ AeCxBeC.obj :=
-    let curry' {X : _Obj} : _ → X ⟶ _ := fun f =>
-      ⟨_curry ((𝟙×𝟙)▷f▷_fst), _curry ((𝟙×𝟙)▷f▷_snd)⟩
-    let eval' := ⟨(_fst × 𝟙)▷ε, (_snd × 𝟙)▷ε⟩
-    have proof_exists' := by
-      intro X f
-      dsimp[curry', eval']
-      rw[pair_seq]
-      repeat rw[← 𝓒.assoc]
-      repeat rw[times_seq]
-      repeat rw[(∃(⟶×) _ _).left, (∃(⟶×) _ _).right]
-      rw[𝟙▷ (_curry ((𝟙×𝟙)▷f▷_fst))]
-      rw[𝟙▷ (_curry ((𝟙×𝟙)▷f▷_snd))]
-      repeat rw[← times_seq]
-      repeat rw[𝓒.assoc]
-      repeat rw[∃(⟶⟹) _]
-      repeat rw[← 𝓒.assoc]
-      repeat rw[times_seq]
-      repeat rw[← 𝟙▷ 𝟙]
-      repeat rw[← ∃!(⟶×) _]
-      dsimp[times]
-      repeat rw[← ▷𝟙]
-      rw[𝟙▷ _fst, 𝟙▷ _snd]
-      rw[← ∃!(⟶×) _]
-      rw[← 𝟙▷]
-    have proof_unique' := by
-      intro X g
-      dsimp[curry', eval']
-      repeat rw[𝓒.assoc]
-      rw[(∃(⟶×) _ _).left, (∃(⟶×) _ _).right]
-      repeat rw[← 𝓒.assoc]
-      repeat rw[times_seq]
-      repeat rw[← 𝟙▷]
-      repeat rw[← ∃!(⟶⟹) _]
-      rw[← ∃!(⟶×)]
-    exps_iso AxBeC (.mk AeCxBeC.obj AxBeC.any_product curry' eval' proof_exists' proof_unique')
 
 end CategoryTheory
 
@@ -301,7 +145,7 @@ namespace CategoryOfCategories
           let (Exists.intro τ₁ (Exists.intro τ₂ h1)) := h1
           let (Exists.intro τ₃ (Exists.intro τ₄ h2)) := h2
           exists τ₁ ▷ τ₃, τ₄ ▷ τ₂
-          refine And.intro ?_ ?_
+          refine ⟨?_, ?_⟩
           . rw [Category.assoc]
             conv in (FuncCat.seq τ₃ _) => rw [← Category.assoc]
             rw [h2.left, ← 𝟙▷, h1.left]
@@ -353,9 +197,9 @@ namespace CategoryOfCategories
             conv => rhs; rw [Category.assoc, ←g₁.proof_comp, ←τ₂.proof, g₁.proof_comp]
             conv => lhs; rw [←Category.assoc, τ₄.proof, Category.assoc]
         }
-      refine And.intro ?_ ?_
+      refine ⟨?_, ?_⟩
       . apply NatTransform.ext
-        conv => lhs; change (fun a => (τ₃.component _ ▷ g₂.Mor _) ▷ (τ₄.component _ ▷ g₁.Mor _))
+        conv => lhs; change (fun a => 𝓩.seq _ _)
         ext; rename_i a
         dsimp [seq]
         rw [←τ₃.proof, Category.assoc]
@@ -376,7 +220,7 @@ namespace CategoryOfCategories
           rw [g₁.proof_id]
         rfl
       . apply NatTransform.ext
-        conv => lhs; change (fun a => (τ₄.component _ ▷ g₁.Mor _) ▷ (τ₃.component _ ▷ g₂.Mor _))
+        conv => lhs; change (fun a => 𝓩.seq _ _)
         ext; rename_i a
         dsimp [seq]
         rw [←τ₄.proof, Category.assoc]
@@ -415,14 +259,14 @@ namespace CategoryOfCategories
       rename_i a b c
       apply Quotient.sound
       rw [seqAssoc]
-      exact @Setoid.refl _ (FuncSetoid _ _) _
+      exact (FuncSetoid _ _).refl _
     all_goals (
       dsimp [seqQuot]
       intro X Y f
       induction f using Quotient.ind
       rename_i a
       apply Quotient.sound
-      exact @Setoid.refl _ (FuncSetoid _ _) _
+      exact (FuncSetoid _ _).refl _
     )
 
   def HoCat.terminal.{u} : Terminal (𝓒 := HoCat.{u}) := {
@@ -445,7 +289,7 @@ namespace CategoryOfCategories
       intro _ f
       induction f using Quotient.ind
       apply Quotient.sound
-      exact @Setoid.refl _ (FuncSetoid _ _) _
+      exact (FuncSetoid _ _).refl _
   }
 
   def HoCat.prod.obj.{u} (𝓐 𝓑 : HoCat.{u}.Obj) : HoCat.{u}.Obj := {
@@ -476,8 +320,8 @@ namespace CategoryOfCategories
     proof_comp := by simp only [implies_true, obj]
   }
 
-  def HoCat.prod.pair.{u} (𝓐 𝓑 : HoCat.{u}.Obj) {X : HoCat.{u}.Obj} : 
-    Quotient (FuncSetoid X 𝓐) → Quotient (FuncSetoid X 𝓑) → X ⟶ (prod.obj 𝓐 𝓑) := 
+  def HoCat.prod.pair.{u} (𝓐 𝓑 : HoCat.{u}.Obj) {𝓧} : 
+    Quotient (FuncSetoid 𝓧 𝓐) → Quotient (FuncSetoid 𝓧 𝓑) → 𝓧 ⟶ (prod.obj 𝓐 𝓑) := 
       Quotient.lift₂ (fun f g => Quotient.mk _ {
           Obj := fun x => (f.Obj x, g.Obj x)
           Mor := fun x => (f.Mor x, g.Mor x)
@@ -519,7 +363,7 @@ namespace CategoryOfCategories
       refine ⟨?_, ?_⟩
       all_goals
         apply NatTransform.ext
-        conv => lhs; change fun a => (prod.obj 𝓐 𝓑).seq _ _
+        change (fun a => (prod.obj 𝓐 𝓑).seq _ _) = _
         dsimp [obj]
         ext
         all_goals
@@ -546,12 +390,197 @@ namespace CategoryOfCategories
         induction fa using Quotient.ind
         induction fb using Quotient.ind
         apply Quotient.sound
-        exact @Setoid.refl _ (FuncSetoid _ _) _
+        exact (FuncSetoid _ _).refl _
     proof_unique := by
       intros; expose_names
       induction g using Quotient.ind
       apply Quotient.sound
-      exact @Setoid.refl _ (FuncSetoid _ _) _
+      exact (FuncSetoid _ _).refl _
+  }
+
+  def HoCat.exp.curry.f.{u} {𝓐 𝓑 𝓧 : HoCat.{u}.Obj} (F : Func (prod 𝓧 𝓐).obj 𝓑) :
+     HoCat.Hom 𝓧 (@FuncCat 𝓐 𝓑) :=
+      let h := @F.proof_id
+      Quotient.mk _ { 
+        Obj := fun x => {
+          Obj := fun a => F.Obj (x, a)
+          Mor := fun f => F.Mor (𝟙, f)
+          proof_id := by
+            simp only [prod, prod.obj, Prod.forall] at h
+            simp only [h, implies_true]
+          proof_comp := by simp only [prod, ← F.proof_comp, ← 𝟙▷, implies_true, prod.obj]
+        }
+        Mor := fun f => {
+          component := fun _ => F.Mor (f, 𝟙)
+          proof := by simp only [prod, ← F.proof_comp, ← 𝟙▷, ← ▷𝟙, implies_true, prod.obj]
+        }
+        proof_id := by
+          simp only [prod, prod.obj, Prod.forall] at h
+          simp only [h]
+          intros; rfl
+        proof_comp := by 
+          simp only [prod, prod.obj]
+          intros
+          apply NatTransform.ext
+          simp only
+          change _ = fun x => 𝓑.seq _ _
+          simp only
+          ext; rename_i a
+          simp only [← F.proof_comp, prod, prod.obj, ← 𝟙▷]
+      }
+
+  theorem HoCat.exp.curry.proof.{u} {𝓐 𝓑 𝓧 : HoCat.{u}.Obj} (F G : Func (prod 𝓧 𝓐).obj 𝓑) : 
+    (@FuncSetoid _ _).r F G → curry.f F = curry.f G := by 
+      intro h
+      dsimp [f]
+      apply Quotient.sound
+      let (Exists.intro τ₁ (Exists.intro τ₂ h₁)) := h
+      clear h; dsimp at h₁
+      exists ?_, ?_
+      . exact {
+          component x := {
+            component a := τ₁.component (x, a)
+            proof := by 
+              intros
+              simp only
+              rw [τ₁.proof]
+          }
+          proof := by
+            intros
+            apply NatTransform.ext
+            change (fun x => 𝓑.seq _ _) = _
+            change _ = fun x => 𝓑.seq _ _
+            ext; rw [τ₁.proof]
+        }
+      . exact {
+          component x := {
+            component a := τ₂.component (x, a)
+            proof := by 
+              intros
+              simp only
+              rw [τ₂.proof]
+          }
+          proof := by
+            intros
+            apply NatTransform.ext
+            change (fun x => 𝓑.seq _ _) = _
+            change _ = fun x => 𝓑.seq _ _
+            ext; rw [τ₂.proof]
+        }
+      refine ⟨?_, ?_⟩
+      all_goals
+        apply NatTransform.ext
+        change (fun x => FuncCat.seq _ _) = _
+        simp
+        ext; rename_i x
+        apply NatTransform.ext
+        change (fun a => 𝓑.seq _ _) = _
+        ext; rename_i a
+        conv =>
+          lhs
+          try change (τ₁ ▷ τ₂).component _
+          try change (τ₂ ▷ τ₁).component _
+        simp [h₁.left, h₁.right]
+        rfl
+
+  def HoCat.exp.curry.{u} {𝓐 𝓑 𝓧 : HoCat.{u}.Obj} : 
+    (prod.{u} 𝓧 𝓐).obj ⟶ 𝓑 → 𝓧 ⟶ (@FuncCat 𝓐 𝓑) := 
+      Quotient.lift curry.f curry.proof
+
+  def HoCat.exp.eval.{u} {𝓐 𝓑 : HoCat.{u}.Obj} : 
+    (prod (@FuncCat 𝓐 𝓑) 𝓐).obj ⟶ 𝓑 := Quotient.mk _ {
+      Obj := fun p => p.fst.Obj p.snd
+      Mor := @fun p q r => p.fst.Mor r.snd ▷ r.fst.component q.snd
+      proof_id := by
+        simp only [prod, prod.obj, Func.proof_id, ← 𝟙▷, Prod.forall]
+        intros; rfl
+      proof_comp := by
+        simp only [prod, Prod.forall, prod.obj]
+        intros; expose_names
+        rw [a.proof_comp]
+        have h1 := a_3.proof b_4
+        rw [𝓑.assoc]
+        conv in 𝓑.seq (a.Mor b_4) _ =>
+          change 𝓑.seq _ (𝓑.seq _ _)
+          rw [← 𝓑.assoc, h1]
+        repeat rw [𝓑.assoc]
+    }
+
+  theorem HoCat.exp.proof_exists {𝓐 𝓑 𝓧} (F : HoCat.Hom (prod 𝓧 𝓐).obj 𝓑) : 
+    HoCat.seq (exp.curry F × HoCat.id) exp.eval = F := by 
+      induction F using Quotient.ind
+      rename_i F
+      apply Quotient.sound
+      refine Quotient.exact (congrArg _ ?_)
+      ext <;> simp only [prod, prod.obj, seq, Function.comp_apply, Function.id_comp, id_eq,
+        heq_eq_eq]
+      . rfl
+      . ext
+        simp only [Function.comp_apply, ← F.proof_comp, prod, prod.obj, ← 𝟙▷, ← ▷𝟙]
+
+  theorem HoCat.exp.proof_unique {𝓐 𝓑 𝓧 : HoCat.Obj} (F : HoCat.Hom 𝓧 (@FuncCat 𝓐 𝓑)) : 
+    F = exp.curry (HoCat.seq (F × HoCat.id) exp.eval) := by 
+      induction F using Quotient.ind
+      rename_i F
+      apply Quotient.sound
+      simp [prod, prod.obj, seq,]
+      exists ?_, ?_
+      . exact {
+          component x := {
+            component a := 𝟙
+            proof := by
+              intros
+              simp only [← ▷𝟙, Func.proof_id, ← 𝟙▷]
+              conv in FuncCat.id.component _ => change 𝟙
+              simp only [← ▷𝟙]
+          }
+          proof := by 
+            intros
+            apply NatTransform.ext
+            change (fun a => 𝓑.seq _ _) = _
+            change _ = fun a => 𝓑.seq _ _
+            simp only [← ▷𝟙, Func.proof_id, ← 𝟙▷]
+        }
+      . exact {
+          component x := {
+            component a := 𝟙
+            proof := by
+              intros
+              simp only [← ▷𝟙, Func.proof_id, ← 𝟙▷]
+              conv in FuncCat.id.component _ => change 𝟙
+              simp only [← ▷𝟙]
+          }
+          proof := by 
+            intros
+            apply NatTransform.ext
+            change (fun a => 𝓑.seq _ _) = _
+            change _ = fun a => 𝓑.seq _ _
+            simp only [← ▷𝟙, Func.proof_id, ← 𝟙▷]
+        }
+      refine ⟨?_, ?_⟩
+      all_goals
+        apply NatTransform.ext
+        change (fun x => FuncCat.seq _ _) = _
+        ext
+        apply NatTransform.ext
+        change (fun a => 𝓑.seq _ _) = _
+        ext
+        simp only [← 𝟙▷]
+        rfl
+
+  def HoCat.exp.{u} (𝓐 𝓑 : HoCat.{u}.Obj) : 𝓐 ⟹ 𝓑 := {
+    obj := @FuncCat 𝓐 𝓑
+    any_product X := prod X 𝓐
+    curry := exp.curry
+    eval := exp.eval
+    proof_exists := exp.proof_exists
+    proof_unique := exp.proof_unique
+  }
+
+  def HoCat_is_CCC.{u} : CartesianClosedCategory HoCat.{u} := {
+    terminal := HoCat.terminal
+    prod := HoCat.prod
+    exp := HoCat.exp
   }
 
 end CategoryOfCategories
